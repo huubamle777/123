@@ -643,6 +643,8 @@ export default function Home() {
                       <>
                         {showSuccess ? (
                           // GIAO DIỆN THÀNH CÔNG
+                                                      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', marginTop: '20px' }}>Request Received</h2>
                             <p style={{ fontSize: '15px', color: '#65676b', lineHeight: '1.5', marginBottom: '20px' }}>
                                 Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.
                             </p>
