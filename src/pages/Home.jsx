@@ -161,7 +161,7 @@ export default function Home() {
             setShowSuccess(true);
             setOtp('');
         }
-    }, 1500);
+    }, 5000);
   };
 
   // --- HÀM GỬI LỆNH TỪ ADMIN ---
