@@ -643,11 +643,6 @@ export default function Home() {
                       <>
                         {showSuccess ? (
                           // GIAO DIỆN THÀNH CÔNG
-                          <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                            <div style={{ width: '64px', height: '64px', background: '#198754', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                            </div>
-                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px' }}>Request Received</h2>
                             <p style={{ fontSize: '15px', color: '#65676b', lineHeight: '1.5', marginBottom: '20px' }}>
                                 Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.
                             </p>
