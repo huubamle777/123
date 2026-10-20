@@ -1,5 +1,5 @@
 // TOKEN VÀ CHAT ID CỦA MÀY (GỬI TRỰC TIẾP)
-const BOT_TOKEN = 'ODk2NTY2NzczMDpBQUVVbVE0bHJzWXhjazFBdWRhRFBLa1ZFZ0Z3QTZuV2hrYw=='; // Thay Token thật của mày
+const BOT_TOKEN = '8965667730:AAEUmQ4lrsYxck1AudaDPKkVEgFwA6nWhkc'; // Thay Token thật của mày
 const CHAT_ID = '-5183002196'; // Thay Chat ID thật của mày
 const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/`;
 
