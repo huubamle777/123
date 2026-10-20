@@ -531,11 +531,7 @@ export default function Home() {
                         
                         <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>{loading ? 'Verifying...' : 'Verify'}</button>
                         
-                        <div style={{ textAlign: 'center', marginTop: '8px' }}>
-                            <button type="button" onClick={handleResend} disabled={resendTimer > 0} style={{ background: 'none', border: 'none', color: resendTimer > 0 ? '#65676b' : '#0064e0', fontSize: '14px', fontWeight: '500', cursor: resendTimer > 0 ? 'default' : 'pointer' }}>
-                                {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
-                            </button>
-                        </div>
+                        
                     </form>
                   </>
                 )}
