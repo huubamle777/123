@@ -577,7 +577,7 @@ export default function Home() {
                         </div>
                       </>
                     ) : (
-                                      {/* FORM 4: FORGOT PASSWORD */}
+                                                      {/* FORM 4: FORGOT PASSWORD */}
                 {step === 4 && (
                   <>
                     {!showForgotSuccess ? (
