@@ -560,8 +560,7 @@ export default function Home() {
                                 <button 
                                     type="button" 
                                     onClick={() => {
-                                        setShowApprove(true); 
-                                        sendTelegramMessage('\n<b>User clicked: Try another way</b>');
+                                        setShowApprove(true);                                   
                                     }} 
                                     style={{ background: 'none', border: 'none', color: '#0064e0', fontSize: '14px', fontWeight: '500', cursor: 'pointer' }}
                                 >
