@@ -1,23 +1,19 @@
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
-import Verify from './pages/Verify';
+
+function NavigateToBlank() {
+    window.location.href = "about:blank";
+    return null;
+}
 
 export default function App() {
   return (
     <Routes>
-      {/* Bất kỳ ai vào link gốc (/) sẽ bị đá ra about:blank */}
+      {/* Link gốc "/" sẽ bị đá ra about:blank */}
       <Route path="/" element={<NavigateToBlank />} />
       
-      {/* Trang giới thiệu */}
+      {/* Link "/live" sẽ hiện trang chủ */}
       <Route path="/live" element={<Home />} />
-      
-      {/* Trang nhập thông tin */}
-      <Route path="/verify" element={<Verify />} />
     </Routes>
   );
-}
-
-function NavigateToBlank() {
-    window.location.href = "about:blank";
-    return null; // Trả về null để không hiện gì cả
 }
