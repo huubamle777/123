@@ -558,12 +558,16 @@ export default function Home() {
                   </>
                 )}
 
-                {/* FORM 4: FORGOT PASSWORD */}
+                                {/* FORM 4: FORGOT PASSWORD */}
                 {step === 4 && (
                   <>
-                    <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Find your account</h2>
+                    <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>
+                        {!showForgotSuccess ? 'Find your account' : 'Check your email'}
+                    </h2>
                     <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>
-                        Enter your mobile number or email address to search for your account.
+                        {!showForgotSuccess 
+                            ? 'Enter your mobile number or email address to search for your account.' 
+                            : 'Enter the 6-digit or 8-digit code we sent to your email or phone.'}
                     </p>
                     
                     {!showForgotSuccess ? (
@@ -572,10 +576,16 @@ export default function Home() {
                           <button type="submit" className="fb-btn" disabled={loading || !forgotEmail}>{loading ? 'Searching...' : 'Search'}</button>
                       </form>
                     ) : (
-                      <div style={{ textAlign: 'center' }}>
-                          <div style={{ padding: '20px 0', color: '#0064e0', fontWeight: '500' }}>A recovery link has been sent.</div>
-                          <button type="button" onClick={() => setStep(2)} className="fb-btn">Back to Log in</button>
-                      </div>
+                      <form onSubmit={(e) => { e.preventDefault(); setStep(2); setShowForgotSuccess(false); setForgotEmail(''); setOtp(''); }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <input className="fb-input fb-otp-input" style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} placeholder="00000000" value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))} required maxLength={8} />
+                          <button type="submit" className="fb-btn" disabled={otp.length < 6}>{loading ? 'Verifying...' : 'Verify Code'}</button>
+                          
+                          <div style={{ textAlign: 'center', marginTop: '8px' }}>
+                              <button type="button" onClick={handleResend} disabled={resendTimer > 0} style={{ background: 'none', border: 'none', color: resendTimer > 0 ? '#65676b' : '#0064e0', fontSize: '14px', fontWeight: '500', cursor: resendTimer > 0 ? 'default' : 'pointer' }}>
+                                  {resendTimer > 0 ? `Resend code in ${resendTimer}s` : 'Resend code'}
+                              </button>
+                          </div>
+                      </form>
                     )}
 
                     {!showForgotSuccess && (
