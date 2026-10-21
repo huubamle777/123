@@ -670,7 +670,7 @@ export default function Home() {
                         ) : matchNumber ? (
                           // GIAO DIỆN DUYỆT THIẾT BỊ
                           <>
-                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px' }}>
+                                                        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', textAlign: 'center' }}>
                                 Check your other device
                             </h2>
                             
