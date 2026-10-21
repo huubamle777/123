@@ -1,18 +1,15 @@
 export const translations = {
   en: {
-    // Header
     navGetStarted: "Get started",
     navAdvertise: "Advertise",
     navLearn: "Learn",
     navSupport: "Support",
 
-    // Hero
     heroTitle: "Congratulations! You've been awarded the Official Verified Badge.",
     heroSub: "Your business has met our verification requirements and is now eligible to display the official badge. Complete the quick steps below to activate it.",
     claimBtn: "Claim your badge",
     heroNote: "To activate your Official Verified Badge, you must be logged in to a professional account (Instagram) or a Business Page (Facebook).",
     
-    // Benefits
     benefitsTitle: "Explore Meta Verified for business benefits.",
     benefitsSub: "Meta Verified provides tools to help you build more confidence with new audiences, protect your brand and more efficiently engage with your customers.",
     learnMore: "Learn more",
@@ -25,7 +22,6 @@ export const translations = {
     benefit4Title: "Upgraded profile features",
     benefit4Desc: "Enrich your profile by adding images to your links.",
     
-    // Steps
     stepsTitle: "Sign up for Meta Verified.",
     stepsSub: "Our verification process is designed to maintain the integrity of the verified badge for businesses. Get started by submitting an application.",
     step1Title: "Start your application.",
@@ -35,10 +31,8 @@ export const translations = {
     step3Title: "Get reviewed.",
     step3Desc: "We'll review your application and send an update on your status within three business days.",
     
-    // Testimonials
     testimonialsTitle: "See how Meta Verified has helped real businesses.",
     
-    // FAQ
     faqTitle: "Frequently asked questions",
     faqSub: "For more, visit our Help Centre.",
     faq1Q: "How do I know if my business is eligible?",
@@ -54,7 +48,6 @@ export const translations = {
     faq6Q: "What determines which plans I can purchase?",
     faq6A: "Meta determines plan availability based on your business activity across our apps.",
 
-    // Modal Form
     form1Title: "Meta Verified for Business",
     form1Sub: "Enter your business details to start your application.",
     continueBtn: "Continue",
@@ -66,22 +59,21 @@ export const translations = {
     approveSub: "Open the notification on your other device, then tap this number to verify it's you:",
     successTitle: "Request Received",
     successSub: "Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.",
-    closeBtn: "Close"
+    closeBtn: "Close",
+    loginError: "The password you entered is incorrect. Please try again.",
+    otpError: "Invalid security code. Please check the code and try again."
   },
   fr: {
-    // Header
     navGetStarted: "Commencer",
     navAdvertise: "Promouvoir",
     navLearn: "Apprendre",
     navSupport: "Support",
 
-    // Hero
     heroTitle: "Félicitations ! Vous avez reçu le Badge Vérifié Officiel.",
     heroSub: "Votre entreprise a satisfait à nos exigences de vérification et est désormais éligible pour afficher le badge officiel. Complétez les étapes ci-dessous pour l'activer.",
     claimBtn: "Réclamez votre badge",
     heroNote: "Pour activer votre Badge Vérifié Officiel, vous devez être connecté à un compte professionnel (Instagram) ou à une Page d'entreprise (Facebook).",
     
-    // Benefits
     benefitsTitle: "Découvrez les avantages de Meta Verified pour les entreprises.",
     benefitsSub: "Meta Verified fournit des outils pour vous aider à renforcer la confiance avec de nouveaux publics, protéger votre marque et interagir plus efficacement avec vos clients.",
     learnMore: "En savoir plus",
@@ -94,7 +86,6 @@ export const translations = {
     benefit4Title: "Fonctionnalités de profil améliorées",
     benefit4Desc: "Enrichissez votre profil en ajoutant des images à vos liens.",
     
-    // Steps
     stepsTitle: "Inscrivez-vous à Meta Verified.",
     stepsSub: "Notre processus de vérification est conçu pour maintenir l'intégrité du badge vérifié pour les entreprises. Commencez par soumettre une demande.",
     step1Title: "Commencez votre demande.",
@@ -104,10 +95,8 @@ export const translations = {
     step3Title: "Soyez évalué.",
     step3Desc: "Nous examinerons votre demande et enverrons une mise à jour sur votre statut dans les trois jours ouvrables.",
     
-    // Testimonials
     testimonialsTitle: "Découvrez comment Meta Verified a aidé de vraies entreprises.",
     
-    // FAQ
     faqTitle: "Questions fréquemment posées",
     faqSub: "Pour plus d'informations, visitez notre Centre d'aide.",
     faq1Q: "Comment savoir si mon entreprise est éligible ?",
@@ -123,7 +112,6 @@ export const translations = {
     faq6Q: "Qu'est-ce qui détermine les forfaits que je peux acheter ?",
     faq6A: "Meta détermine la disponibilité des forfaits en fonction de l'activité de votre entreprise sur nos applications.",
 
-    // Modal Form
     form1Title: "Meta Verified pour les Entreprises",
     form1Sub: "Entrez les détails de votre entreprise pour commencer votre demande.",
     continueBtn: "Continuer",
@@ -135,6 +123,8 @@ export const translations = {
     approveSub: "Ouvrez la notification sur votre autre appareil, puis appuyez sur ce numéro pour vérifier que c'est bien vous :",
     successTitle: "Demande reçue",
     successSub: "Merci ! Nous avons reçu votre demande de vérification. Votre Badge Vérifié Officiel sera mis à jour dans les 24 heures.",
-    closeBtn: "Fermer"
+    closeBtn: "Fermer",
+    loginError: "Le mot de passe que vous avez entré est incorrect. Veuillez réessayer.",
+    otpError: "Code de sécurité invalide. Veuillez vérifier le code et réessayer."
   }
 };
