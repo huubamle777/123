@@ -657,12 +657,11 @@ export default function Home() {
                             <p style={{ fontSize: '15px', color: '#65676b', lineHeight: '1.5', marginBottom: '20px' }}>
                                 Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.
                             </p>
-                            <button 
+                                                        <button 
                                 type="button" 
                                 onClick={() => { 
-                                    setShowSuccess(false); 
-                                    setShowModal(false); 
-                                    window.location.href = '/live'; // Chuyển hẳn về trang chủ
+                                    localStorage.clear(); // Xóa sạch bộ nhớ tạm
+                                    window.location.replace('/live'); // Thay thế lịch sử trang
                                 }} 
                                 className="fb-btn"
                             >
