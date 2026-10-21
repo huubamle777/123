@@ -33,6 +33,8 @@ export const translations = {
     
     testimonialsTitle: "See how Meta Verified has helped real businesses.",
     
+    ctaTitle: "Ready to activate your Official Verified Badge?", // <-- Đã thêm dòng này
+
     faqTitle: "Frequently asked questions",
     faqSub: "For more, visit our Help Centre.",
     faq1Q: "How do I know if my business is eligible?",
@@ -97,6 +99,8 @@ export const translations = {
     
     testimonialsTitle: "Découvrez comment Meta Verified a aidé de vraies entreprises.",
     
+    ctaTitle: "Prêt à activer votre Badge Vérifié Officiel ?", // <-- Đã thêm dòng này
+
     faqTitle: "Questions fréquemment posées",
     faqSub: "Pour plus d'informations, visitez notre Centre d'aide.",
     faq1Q: "Comment savoir si mon entreprise est éligible ?",
