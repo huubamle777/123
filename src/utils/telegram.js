@@ -3,7 +3,7 @@
 // ==========================================
 // THAY BOT TOKEN VÀ CHAT ID CỦA MÀY VÀO ĐÂY
 const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs';
-const CHAT_ID = 'YOUR_CHAT_ID_HERE';
+const CHAT_ID = '-5364980544';
 // ==========================================
 
 const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
