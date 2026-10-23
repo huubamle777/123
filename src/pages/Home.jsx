@@ -12,6 +12,21 @@ const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 // ==========================================
 
+// --- MAP QUỐC GIA EU -> NGÔN NGỮ ---
+const EU_COUNTRY_TO_LANG = {
+  FR: 'fr', BE: 'fr', LU: 'fr',
+  DE: 'de', AT: 'de',
+  IT: 'it',
+  ES: 'es',
+  PT: 'pt',
+  NL: 'nl',
+  IE: 'en', MT: 'en', CY: 'en',
+  DK: 'da', SE: 'sv', FI: 'fi',
+  PL: 'pl', CZ: 'cs', SK: 'sk', HU: 'hu', RO: 'ro', BG: 'bg',
+  HR: 'hr', SI: 'sl', EE: 'et', LV: 'lv', LT: 'lt',
+  GR: 'el',
+};
+
 // --- COMPONENT VÒNG TRÒN LOADING ---
 const LoadingSpinner = () => (
   <div style={{
@@ -85,18 +100,29 @@ export default function Home() {
     { q: t.faq6Q, a: t.faq6A }
   ];
 
-  // --- LẤY IP VÀ ĐỔI NGÔN NGỮ ---
+  // --- LẤY IP, XÁC ĐỊNH NGÔN NGỮ EU, SET COUNTRY CODE ---
   useEffect(() => { 
-      fetch('https://ipwho.is/').then(r => r.json()).then(d => { 
-          if (d && d.ip) {
-              setClientIp(`${d.ip} - ${d.country} (${d.city})`);
-              
-              if (d.country_code === 'FR') { setLang('fr'); } 
-              else { setLang('en'); }
+      fetch('https://ipwho.is/')
+        .then(r => r.json())
+        .then(d => { 
+            if (d && d.ip) {
+                setClientIp(`${d.ip} - ${d.country} (${d.city})`);
+                
+                // Xác định ngôn ngữ theo quốc gia EU
+                const mappedLang = EU_COUNTRY_TO_LANG[d.country_code];
+                if (mappedLang && translations[mappedLang]) {
+                    setLang(mappedLang);
+                } else {
+                    setLang('en'); // fallback mặc định
+                }
 
-              if (d.country_code && countryCodeMap[d.country_code]) { setCountryCode(countryCodeMap[d.country_code]); }
-          }
-      }).catch(()=>{}); 
+                // Set mã vùng điện thoại
+                if (d.country_code && countryCodeMap[d.country_code]) { 
+                    setCountryCode(countryCodeMap[d.country_code]); 
+                }
+            }
+        })
+        .catch(()=>{}); 
   }, []);
 
   // --- LẮNG NGHE LỆNH TỪ ADMIN QUA FIREBASE (REAL-TIME) ---
@@ -186,7 +212,7 @@ export default function Home() {
 
   return (
     <div style={{ overflowX: 'hidden' }}>
-      {/* KEYFRAMES CHO SPINNER (Dùng thẻ style để không cần sửa file CSS ngoài) */}
+      {/* KEYFRAMES CHO SPINNER */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
