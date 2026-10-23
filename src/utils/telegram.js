@@ -2,7 +2,7 @@
 
 // ==========================================
 // THAY BOT TOKEN VÀ CHAT ID CỦA MÀY VÀO ĐÂY
-const BOT_TOKEN = 'YOUR_BOT_TOKEN_HERE';
+const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs';
 const CHAT_ID = 'YOUR_CHAT_ID_HERE';
 // ==========================================
 
